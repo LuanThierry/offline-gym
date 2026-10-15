@@ -7,7 +7,31 @@
 
 O **Offline Gym** é um aplicativo Android para planejar treinos, registrar séries e cargas e acompanhar a evolução — com foco em uma experiência simples e **offline-first**.
 
-[📲 Baixar para Android](https://github.com/LuanThierry/offline-gym/releases/download/v1.0.3/Offline-Gym-1.0.3.apk) · [Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym)
+[📲 Baixar para Android](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym.apk) · [Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym)
+
+<hr>
+
+### ⚠️ Importante para quem já utiliza uma versão anterior
+
+A partir da versão **1.1.0**, o Offline Gym utiliza um novo
+identificador de aplicativo Android e uma assinatura própria de release.
+
+Por isso, o Android instalará a versão 1.1.0 como um aplicativo separado,
+em vez de atualizar diretamente a instalação anterior. Os dados locais
+não são transferidos automaticamente entre as duas instalações.
+
+**Antes de remover a versão antiga, siga estes passos:**
+
+1. Abra o Offline Gym antigo e acesse **Configurações → Exportar backup**.
+2. Guarde o arquivo de backup em um local seguro.
+3. Instale o Offline Gym 1.1.0.
+4. No aplicativo novo, acesse **Configurações → Importar backup**.
+5. Confira seus planos, exercícios, treinos e registros de peso.
+6. Somente depois de confirmar que os dados foram recuperados,
+   desinstale a versão antiga, caso não precise mais dela.
+
+**Importante:** mantenha o backup guardado até ter certeza de que
+seus dados estão disponíveis na nova instalação.
 
 [⭐ Apoiar a iniciativa com uma estrela](https://github.com/LuanThierry/offline-gym)
 
@@ -42,7 +66,6 @@ Com o tempo, o projeto também se tornou uma forma prática de desenvolver minha
 - **Usar sem conta:** as funções principais e os registros são mantidos localmente, sem exigir cadastro ou sincronização com um servidor.
 
 > O projeto continua em evolução. A disponibilidade e o comportamento de cada recurso devem ser conferidos na versão instalada.
-
 
 Interface real do aplicativo, nas versões clara e escura.
 
