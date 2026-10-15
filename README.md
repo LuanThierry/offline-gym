@@ -7,7 +7,7 @@
 
 O **Offline Gym** é um aplicativo Android para planejar treinos, registrar séries e cargas e acompanhar a evolução — com foco em uma experiência simples e **offline-first**.
 
-[📲 Baixar para Android](https://github.com/LuanThierry/offline-gym/releases/tag/v1.0.3/Offline-Gym-1.0.3.apk) · [Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym)
+[📲 Baixar para Android](https://github.com/LuanThierry/offline-gym/releases/download/v1.0.3/Offline-Gym-1.0.3.apk) · [Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym)
 
 [⭐ Apoiar a iniciativa com uma estrela](https://github.com/LuanThierry/offline-gym)
 
