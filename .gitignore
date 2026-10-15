@@ -62,3 +62,16 @@ app.*.map.json
 
 # APKs locais: publicar por meio de GitHub Releases
 *.apk
+
+# Gradle gerado localmente (não entra no repositório)
+.gradle/
+android/.gradle/
+android/app/build/
+
+# Outros arquivos de assinatura e pacotes de publicação
+**/*.jks
+**/*.keystore
+*.aab
+
+# Backups exportados pelo app, se você salvar algum dentro da pasta do projeto
+offline_gym_backup_*.zip

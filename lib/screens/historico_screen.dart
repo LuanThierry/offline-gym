@@ -1,8 +1,5 @@
 import 'dart:math' as math;
 
-import 'historico_treinos_completo_screen.dart';
-import 'peso_corporal_completo_screen.dart';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -11,8 +8,9 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../models/workout_plan_model.dart';
 import '../providers/workout_provider.dart';
-
 import '../widgets/theme_toggle_button.dart';
+import 'historico_treinos_completo_screen.dart';
+import 'peso_corporal_completo_screen.dart';
 
 class HistoricoScreen extends StatefulWidget {
   const HistoricoScreen({super.key});
@@ -33,17 +31,18 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         final hasPlannedExercises = provider.plannedExerciseNames.isNotEmpty;
         final hasCompletedWorkouts = provider.history.isNotEmpty;
         final selectedDate = _selectedDay ?? _focusedDay;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         final hasTrainingSelected = provider.hasCompletedWorkoutOn(
           selectedDate,
         );
         final visibleHistory = provider.history.take(3).toList(growable: false);
-
         final visibleBodyWeights = provider.bodyWeights
             .take(3)
             .toList(growable: false);
+
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Histórico e evolução'),
+            title: const Text('Histórico de evolução'),
             actions: const [ThemeToggleButton()],
           ),
           body: ListView(
@@ -53,22 +52,25 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE6E7EF)),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: <Widget>[
                       Icon(
                         Icons.insights_outlined,
-                        color: Color(0xFF6C5CE7),
+                        color: Theme.of(context).colorScheme.primary,
                         size: 30,
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           'Nenhum histórico de evolução disponível. Conclua seu primeiro treino!',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -111,32 +113,48 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                         color: Color(0xFF6C5CE7),
                       ),
                     ),
-                    daysOfWeekStyle: const DaysOfWeekStyle(
+                    daysOfWeekStyle: DaysOfWeekStyle(
                       weekdayStyle: TextStyle(
-                        color: Color(0xFF636E72),
+                        color: isDark
+                            ? const Color(0xFFE8E6F0)
+                            : const Color(0xFF636E72),
                         fontSize: 12,
                       ),
                       weekendStyle: TextStyle(
-                        color: Color(0xFF636E72),
+                        color: isDark
+                            ? const Color(0xFFC4B8FF)
+                            : const Color(0xFF6C5CE7),
                         fontSize: 12,
                       ),
                     ),
                     calendarStyle: const CalendarStyle(
                       outsideDaysVisible: false,
-                      todayDecoration: BoxDecoration(
-                        color: Color(0x338C7AE6),
-                        shape: BoxShape.circle,
-                      ),
-                      selectedDecoration: BoxDecoration(
-                        color: Color(0xFF6C5CE7),
-                        shape: BoxShape.circle,
-                      ),
-                      markerDecoration: BoxDecoration(
-                        color: Color(0xFF2ECC71),
-                        shape: BoxShape.circle,
-                      ),
-                      markerSize: 6,
-                      markersMaxCount: 1,
+                    ),
+                    calendarBuilders: CalendarBuilders<String>(
+                      defaultBuilder: (context, day, focusedDay) {
+                        return _HistoryCalendarDay(
+                          day: day,
+                          isSelected: false,
+                          isToday: false,
+                          hasWorkout: provider.hasCompletedWorkoutOn(day),
+                        );
+                      },
+                      selectedBuilder: (context, day, focusedDay) {
+                        return _HistoryCalendarDay(
+                          day: day,
+                          isSelected: true,
+                          isToday: isSameDay(day, DateTime.now()),
+                          hasWorkout: provider.hasCompletedWorkoutOn(day),
+                        );
+                      },
+                      todayBuilder: (context, day, focusedDay) {
+                        return _HistoryCalendarDay(
+                          day: day,
+                          isSelected: false,
+                          isToday: true,
+                          hasWorkout: provider.hasCompletedWorkoutOn(day),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -146,14 +164,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
                   color: hasTrainingSelected
-                      ? (Theme.of(context).brightness == Brightness.dark
+                      ? (isDark
                             ? const Color(0xFF183629)
                             : const Color(0xFFEAF8F0))
                       : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: hasTrainingSelected
-                        ? (Theme.of(context).brightness == Brightness.dark
+                        ? (isDark
                               ? const Color(0xFF285B40)
                               : const Color(0xFFBDE8CD))
                         : Theme.of(context).colorScheme.outlineVariant,
@@ -166,7 +184,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                           ? Icons.check_circle
                           : Icons.event_available,
                       color: hasTrainingSelected
-                          ? (Theme.of(context).brightness == Brightness.dark
+                          ? (isDark
                                 ? const Color(0xFF6FD39A)
                                 : const Color(0xFF238754))
                           : Theme.of(context).colorScheme.primary,
@@ -211,7 +229,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: _showBodyWeightChart
-                      ? _buildBodyWeightChart(provider)
+                      ? _buildBodyWeightChart(context, provider)
                       : _buildExerciseChart(
                           context,
                           provider,
@@ -238,12 +256,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
               ),
               const SizedBox(height: 10),
               if (provider.bodyWeights.isEmpty)
-                const Card(
+                Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     child: Text(
                       'Nenhum peso corporal registrado ainda.',
-                      style: TextStyle(color: Color(0xFF636E72)),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 )
@@ -251,7 +271,6 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 ...visibleBodyWeights.map((record) {
                   final date =
                       DateTime.tryParse(record.dataISO) ?? DateTime.now();
-
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
@@ -260,12 +279,16 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEDE9FF),
+                            color: isDark
+                                ? const Color(0xFF29243D)
+                                : const Color(0xFFEDE9FF),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.monitor_weight_outlined,
-                            color: Color(0xFF6C5CE7),
+                            color: isDark
+                                ? const Color(0xFFC4B8FF)
+                                : const Color(0xFF6C5CE7),
                           ),
                         ),
                         title: Text('${record.pesoKg.toStringAsFixed(1)} kg'),
@@ -298,32 +321,31 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     ),
                   ),
               ],
-
               const SizedBox(height: 18),
-
               Text(
                 'Últimos treinos',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-
               const SizedBox(height: 10),
-
               if (provider.history.isEmpty)
-                const Card(
+                Card(
                   child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('Nenhum treino concluído foi registrado.'),
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'Nenhum treino concluído foi registrado.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 )
               else ...<Widget>[
                 ...visibleHistory.map((workout) {
                   final date =
                       DateTime.tryParse(workout.dataISO) ?? DateTime.now();
-
                   final duration = Duration(
                     seconds: workout.tempoTotalSegundos,
                   );
-
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
@@ -332,12 +354,16 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEDE9FF),
+                            color: isDark
+                                ? const Color(0xFF29243D)
+                                : const Color(0xFFEDE9FF),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.check,
-                            color: Color(0xFF6C5CE7),
+                            color: isDark
+                                ? const Color(0xFFC4B8FF)
+                                : const Color(0xFF6C5CE7),
                           ),
                         ),
                         title: Text(
@@ -440,12 +466,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         ),
         const SizedBox(height: 18),
         if (provider.evolutionPoints.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
             child: Text(
               'Ainda não há séries concluídas para este exercício. Marque séries durante um treino e finalize a sessão para registrar a evolução.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF636E72)),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           )
         else ...<Widget>[
@@ -463,21 +491,26 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
     );
   }
 
-  Widget _buildBodyWeightChart(WorkoutProvider provider) {
+  Widget _buildBodyWeightChart(BuildContext context, WorkoutProvider provider) {
     if (provider.bodyWeightPoints.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
         child: Text(
           'Registre seu peso corporal para acompanhar sua evolução.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFF636E72)),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const Text('Evolução do peso corporal (kg)'),
+        Text(
+          'Evolução do peso corporal (kg)',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
         const SizedBox(height: 12),
         SizedBox(
           height: 250,
@@ -681,6 +714,89 @@ class _BodyWeightDialogState extends State<_BodyWeightDialog> {
   }
 }
 
+class _HistoryCalendarDay extends StatelessWidget {
+  const _HistoryCalendarDay({
+    required this.day,
+    required this.isSelected,
+    required this.isToday,
+    required this.hasWorkout,
+  });
+
+  final DateTime day;
+  final bool isSelected;
+  final bool isToday;
+  final bool hasWorkout;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isWeekend =
+        day.weekday == DateTime.saturday || day.weekday == DateTime.sunday;
+    final weekendColor = isDark
+        ? const Color(0xFFC4B8FF)
+        : const Color(0xFF6C5CE7);
+    final weekdayColor = isDark
+        ? const Color(0xFFE8E6F0)
+        : const Color(0xFF2D3436);
+
+    final Color? backgroundColor = isSelected
+        ? (isWeekend
+              ? theme.colorScheme.primary
+              : (isDark ? const Color(0xFF34313F) : const Color(0xFFE6E7EF)))
+        : (isWeekend
+              ? (isDark ? const Color(0xFF29243D) : const Color(0xFFF5F4FF))
+              : null);
+    final textColor = isSelected && isWeekend
+        ? Colors.white
+        : (isWeekend ? weekendColor : weekdayColor);
+
+    return Center(
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+          border: isToday
+              ? Border.all(
+                  color: isWeekend
+                      ? weekendColor
+                      : theme.colorScheme.outlineVariant,
+                  width: 1.2,
+                )
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${day.day}',
+              style: TextStyle(
+                color: textColor,
+                fontSize: 12,
+                fontWeight: isWeekend ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 3),
+            if (hasWorkout)
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF2ECC71),
+                  shape: BoxShape.circle,
+                ),
+              )
+            else
+              const SizedBox(height: 4),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EvolutionLineChart extends StatelessWidget {
   const _EvolutionLineChart({required this.points});
 
@@ -689,6 +805,9 @@ class _EvolutionLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final axisColor = theme.colorScheme.onSurfaceVariant;
+    final gridColor = theme.colorScheme.outlineVariant;
     final spots = <FlSpot>[
       for (var index = 0; index < points.length; index++)
         FlSpot(index.toDouble(), points[index].loadKg),
@@ -711,7 +830,12 @@ class _EvolutionLineChart extends StatelessWidget {
         maxX: maxX,
         minY: minY,
         maxY: maxY <= minY ? minY + 5 : maxY,
-        gridData: const FlGridData(show: true, drawVerticalLine: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (value) =>
+              FlLine(color: gridColor, strokeWidth: 1),
+        ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
@@ -721,7 +845,10 @@ class _EvolutionLineChart extends StatelessWidget {
             sideTitles: SideTitles(showTitles: false),
           ),
           leftTitles: AxisTitles(
-            axisNameWidget: const Text('kg', style: TextStyle(fontSize: 11)),
+            axisNameWidget: Text(
+              'kg',
+              style: TextStyle(fontSize: 11, color: axisColor),
+            ),
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 38,
@@ -729,7 +856,7 @@ class _EvolutionLineChart extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 5),
                 child: Text(
                   value.toStringAsFixed(0),
-                  style: const TextStyle(fontSize: 10),
+                  style: TextStyle(fontSize: 10, color: axisColor),
                 ),
               ),
             ),
@@ -750,7 +877,7 @@ class _EvolutionLineChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     DateFormat('dd/MM').format(points[index].date),
-                    style: const TextStyle(fontSize: 10),
+                    style: TextStyle(fontSize: 10, color: axisColor),
                   ),
                 );
               },

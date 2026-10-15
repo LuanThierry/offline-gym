@@ -714,6 +714,52 @@ class DatabaseHelper {
       final parsed = DateTime.tryParse((row['dataDia'] ?? '').toString());
       if (parsed != null) result.add(DateTime(parsed.year, parsed.month, parsed.day));
     }
+
     return result;
+  }
+
+  /// Lê as tabelas de dados para o backup. O treino em andamento não entra.
+  Future<Map<String, List<Map<String, Object?>>>> exportBackupTables() async {
+    final db = await database;
+    return <String, List<Map<String, Object?>>>{
+      'exercicios_plano': await db.query('exercicios_plano', orderBy: 'id ASC'),
+      'historico_treinos': await db.query('historico_treinos', orderBy: 'id ASC'),
+      'historico_series': await db.query('historico_series', orderBy: 'id ASC'),
+      'peso_corporal': await db.query('peso_corporal', orderBy: 'id ASC'),
+    };
+  }
+
+  /// Substitui os dados do usuário numa única transação. Os IDs originais são
+  /// mantidos para que as relações entre tabelas continuem válidas.
+  Future<void> restoreBackupTables({
+    required List<Map<String, Object?>> exercises,
+    required List<Map<String, Object?>> workouts,
+    required List<Map<String, Object?>> series,
+    required List<Map<String, Object?>> bodyWeights,
+  }) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      // A ordem das deleções respeita as chaves estrangeiras.
+      await txn.delete('series_em_andamento');
+      await txn.delete('treino_em_andamento');
+      await txn.delete('historico_series');
+      await txn.delete('historico_treinos');
+      await txn.delete('exercicios_plano');
+      await txn.delete('peso_corporal');
+      await _seedWeekdays(txn);
+
+      for (final row in exercises) {
+        await txn.insert('exercicios_plano', row, conflictAlgorithm: ConflictAlgorithm.abort);
+      }
+      for (final row in workouts) {
+        await txn.insert('historico_treinos', row, conflictAlgorithm: ConflictAlgorithm.abort);
+      }
+      for (final row in series) {
+        await txn.insert('historico_series', row, conflictAlgorithm: ConflictAlgorithm.abort);
+      }
+      for (final row in bodyWeights) {
+        await txn.insert('peso_corporal', row, conflictAlgorithm: ConflictAlgorithm.abort);
+      }
+    });
   }
 }

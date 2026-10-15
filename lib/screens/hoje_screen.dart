@@ -8,6 +8,7 @@ import '../models/workout_plan_model.dart';
 import '../providers/workout_provider.dart';
 
 import '../widgets/theme_toggle_button.dart';
+import '../widgets/settings_button.dart';
 
 class HojeScreen extends StatefulWidget {
   const HojeScreen({super.key, required this.onConfigurePlan});
@@ -64,7 +65,7 @@ class _HojeScreenState extends State<HojeScreen> {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Hoje'),
-              actions: const [ThemeToggleButton()],
+              actions: const [SettingsButton(), ThemeToggleButton()],
             ),
             body: SafeArea(
               child: Center(
@@ -130,6 +131,7 @@ class _HojeScreenState extends State<HojeScreen> {
                     ),
                   ),
                 ),
+              const SettingsButton(),
               const ThemeToggleButton(),
             ],
           ),
@@ -589,6 +591,7 @@ class _RestDurationPickerSheetState extends State<_RestDurationPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
       child: Column(
@@ -615,7 +618,7 @@ class _RestDurationPickerSheetState extends State<_RestDurationPickerSheet> {
               width: _dialSize,
               height: _dialSize,
               child: CustomPaint(
-                painter: _RestDialPainter(seconds: _seconds),
+                painter: _RestDialPainter(seconds: _seconds, isDark: isDark),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -628,19 +631,20 @@ class _RestDurationPickerSheetState extends State<_RestDurationPickerSheet> {
                       const SizedBox(height: 8),
                       Text(
                         _formatRestDuration(_seconds),
-                        style: const TextStyle(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF2D3436),
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'MIN : SEG',
                         style: TextStyle(
                           fontSize: 11,
                           letterSpacing: 2,
-                          color: Color(0xFF636E72),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -679,9 +683,10 @@ class _RestDurationPickerSheetState extends State<_RestDurationPickerSheet> {
 }
 
 class _RestDialPainter extends CustomPainter {
-  const _RestDialPainter({required this.seconds});
+  const _RestDialPainter({required this.seconds, required this.isDark});
 
   final int seconds;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -694,7 +699,7 @@ class _RestDialPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     final trackPaint = Paint()
-      ..color = const Color(0xFFEDE9FF)
+      ..color = isDark ? const Color(0xFF343044) : const Color(0xFFEDE9FF)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12;
 
@@ -735,7 +740,7 @@ class _RestDialPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RestDialPainter oldDelegate) {
-    return oldDelegate.seconds != seconds;
+    return oldDelegate.seconds != seconds || oldDelegate.isDark != isDark;
   }
 }
 
@@ -745,11 +750,13 @@ class _RestTimerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Consumer<WorkoutProvider>(
         builder: (context, state, _) {
@@ -766,8 +773,9 @@ class _RestTimerSheet extends StatelessWidget {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDFE2E7),
-                  borderRadius: BorderRadius.circular(4),
+                  color: isDark
+                      ? const Color(0xFF444451)
+                      : const Color(0xFFDFE2E7),
                 ),
               ),
               const SizedBox(height: 22),
@@ -792,19 +800,22 @@ class _RestTimerSheet extends StatelessWidget {
                       child: CircularProgressIndicator(
                         value: progress,
                         strokeWidth: 10,
-                        backgroundColor: const Color(0xFFEDE9FF),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Color(0xFF6C5CE7),
+                        backgroundColor: isDark
+                            ? const Color(0xFF343044)
+                            : const Color(0xFFEDE9FF),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
                     Text(
                       '${remaining}s',
-                      style: const TextStyle(
-                        color: Color(0xFF2D3436),
-                        fontSize: 35,
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontSize: 35,
+                            fontWeight: FontWeight.w800,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                     ),
                   ],
                 ),

@@ -130,6 +130,17 @@ class WorkoutProvider extends ChangeNotifier {
 
   Future<void> refreshHistory() => _reloadHistory();
 
+  /// Recarrega tudo depois de restaurar um backup.
+  Future<void> reloadAllData() async {
+    if (_sessionActive) {
+      throw StateError('Finalize o treino em andamento antes de restaurar um backup.');
+    }
+    _selectedEvolutionExercise = null;
+    await _reloadPlans(notify: false);
+    await _reloadHistory(notify: false);
+    notifyListeners();
+  }
+
   Future<void> selectEvolutionExercise(String exerciseName) async {
     if (!_plannedExerciseNames.contains(exerciseName)) return;
     _selectedEvolutionExercise = exerciseName;

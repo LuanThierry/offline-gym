@@ -20,15 +20,17 @@ class PlanosScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Planos da semana'),
         actions: const [ThemeToggleButton()],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(34),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(34),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Organize seus exercícios por dia.',
-                style: TextStyle(color: Color(0xFF636E72)),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
@@ -82,7 +84,7 @@ class PlanosScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -118,6 +120,7 @@ class _DayPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasExercises = exercises.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
@@ -130,14 +133,18 @@ class _DayPlanCard extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEDE9FF),
+                    color: isDark
+                        ? const Color(0xFF29243D)
+                        : const Color(0xFFEDE9FF),
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Center(
                     child: Text(
                       WorkoutPlanModel.weekdayName(weekday).substring(0, 1),
-                      style: const TextStyle(
-                        color: Color(0xFF6C5CE7),
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFFC4B8FF)
+                            : const Color(0xFF6C5CE7),
                         fontSize: 19,
                         fontWeight: FontWeight.w800,
                       ),
@@ -158,13 +165,22 @@ class _DayPlanCard extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF8F0),
+                      color: isDark
+                          ? const Color(0xFF080D0A)
+                          : const Color(0xFFEAF8F0),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF1C3325)
+                            : const Color(0xFFBDE8CD),
+                      ),
                     ),
                     child: Text(
                       '${exercises.length} ${exercises.length == 1 ? 'exercício' : 'exercícios'}',
-                      style: const TextStyle(
-                        color: Color(0xFF238754),
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFF8BE0A6)
+                            : const Color(0xFF238754),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -190,14 +206,18 @@ class _DayPlanCard extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F4FF),
+                          color: isDark
+                              ? const Color(0xFF282438)
+                              : const Color(0xFFF5F4FF),
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: Text(
                           exercise.nome,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF5144B5),
+                            color: isDark
+                                ? const Color(0xFFC9BEFF)
+                                : const Color(0xFF5144B5),
                           ),
                         ),
                       );
@@ -400,10 +420,10 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Adicione, edite ou remova exercícios.',
                         style: TextStyle(
-                          color: Color(0xFF636E72),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontSize: 12,
                         ),
                       ),
@@ -558,17 +578,25 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                             const SizedBox(height: 8),
                             Row(
                               children: <Widget>[
-                                const Icon(
+                                Icon(
                                   Icons.offline_pin,
                                   size: 17,
-                                  color: Color(0xFF238754),
+                                  color:
+                                      Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? const Color(0xFF8BE0A6)
+                                      : const Color(0xFF238754),
                                 ),
                                 const SizedBox(width: 6),
-                                const Expanded(
+                                Expanded(
                                   child: Text(
                                     'Imagem disponível localmente',
                                     style: TextStyle(
-                                      color: Color(0xFF238754),
+                                      color:
+                                          Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? const Color(0xFF8BE0A6)
+                                          : const Color(0xFF238754),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -592,9 +620,13 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
           ),
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE6E7EF))),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
             ),
             child: Row(
               children: <Widget>[
