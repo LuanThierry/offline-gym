@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/workout_plan_model.dart';
 import '../providers/workout_provider.dart';
+
+import '../widgets/theme_toggle_button.dart';
 
 class HojeScreen extends StatefulWidget {
   const HojeScreen({super.key, required this.onConfigurePlan});
@@ -17,13 +20,25 @@ class HojeScreen extends StatefulWidget {
 
 class _HojeScreenState extends State<HojeScreen> {
   bool _restSheetOpen = false;
+  void _openRestDurationPicker(WorkoutProvider provider) {
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (_) => _RestDurationPickerSheet(
+        initialSeconds: provider.restDurationSeconds,
+        onConfirm: provider.setRestDuration,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<WorkoutProvider>(
       builder: (context, provider, _) {
         final todayWeekday = DateTime.now().weekday;
-        final weekday = provider.sessionActive && provider.sessionWeekday != null
+        final weekday =
+            provider.sessionActive && provider.sessionWeekday != null
             ? provider.sessionWeekday!
             : todayWeekday;
         final dayName = WorkoutPlanModel.weekdayName(weekday);
@@ -40,16 +55,17 @@ class _HojeScreenState extends State<HojeScreen> {
         if (!provider.initialized) {
           return const Scaffold(
             body: SafeArea(
-              child: Center(
-                child: Text('Carregando seus dados locais...'),
-              ),
+              child: Center(child: Text('Carregando seus dados locais...')),
             ),
           );
         }
 
         if (exercises.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Hoje')),
+            appBar: AppBar(
+              title: const Text('Hoje'),
+              actions: const [ThemeToggleButton()],
+            ),
             body: SafeArea(
               child: Center(
                 child: Padding(
@@ -81,8 +97,8 @@ class _HojeScreenState extends State<HojeScreen> {
                         'Configure seu treino para deixar tudo pronto antes de ir à academia.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: const Color(0xFF636E72),
-                            ),
+                          color: const Color(0xFF636E72),
+                        ),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
@@ -107,11 +123,14 @@ class _HojeScreenState extends State<HojeScreen> {
             actions: <Widget>[
               if (provider.sessionActive)
                 Padding(
-                  padding: const EdgeInsets.only(right: 16),
+                  padding: const EdgeInsets.only(right: 8),
                   child: Center(
-                    child: _TimerPill(text: _formatDuration(provider.sessionElapsed)),
+                    child: _TimerPill(
+                      text: _formatDuration(provider.sessionElapsed),
+                    ),
                   ),
                 ),
+              const ThemeToggleButton(),
             ],
           ),
           body: SafeArea(
@@ -130,17 +149,14 @@ class _HojeScreenState extends State<HojeScreen> {
                       Row(
                         children: <Widget>[
                           const Expanded(child: Text('Descanso entre séries')),
-                          DropdownButton<int>(
-                            value: provider.restDurationSeconds,
-                            borderRadius: BorderRadius.circular(12),
-                            items: const <DropdownMenuItem<int>>[
-                              DropdownMenuItem(value: 30, child: Text('30 s')),
-                              DropdownMenuItem(value: 60, child: Text('60 s')),
-                              DropdownMenuItem(value: 90, child: Text('90 s')),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) provider.setRestDuration(value);
-                            },
+                          OutlinedButton.icon(
+                            onPressed: provider.sessionActive
+                                ? null
+                                : () => _openRestDurationPicker(provider),
+                            icon: const Icon(Icons.timer_outlined),
+                            label: Text(
+                              _formatRestDuration(provider.restDurationSeconds),
+                            ),
                           ),
                         ],
                       ),
@@ -151,12 +167,16 @@ class _HojeScreenState extends State<HojeScreen> {
                           onPressed: provider.sessionActive
                               ? null
                               : () => _startWorkout(provider, weekday),
-                          icon: Icon(provider.sessionActive
-                              ? Icons.timer
-                              : Icons.play_arrow_rounded),
-                          label: Text(provider.sessionActive
-                              ? 'Treino em andamento'
-                              : 'Iniciar Treino'),
+                          icon: Icon(
+                            provider.sessionActive
+                                ? Icons.timer
+                                : Icons.play_arrow_rounded,
+                          ),
+                          label: Text(
+                            provider.sessionActive
+                                ? 'Treino em andamento'
+                                : 'Iniciar Treino',
+                          ),
                         ),
                       ),
                     ],
@@ -172,21 +192,29 @@ class _HojeScreenState extends State<HojeScreen> {
                       final exercise = exercises[index];
                       return _WorkoutExerciseCard(
                         exercise: exercise,
-                        enabled: provider.sessionActive &&
+                        enabled:
+                            provider.sessionActive &&
                             provider.sessionWeekday == weekday,
                         onToggleSet: (seriesIndex, checked) {
-                          final marked = provider.toggleSeries(exercise, seriesIndex);
-                          if (marked && checked) _showRestSheet(provider);
+                          final marked = provider.toggleSeries(
+                            exercise,
+                            seriesIndex,
+                          );
+                          if (marked && checked) {
+                            _showRestSheet(provider);
+                          }
                         },
                         isSetCompleted: provider.isSetCompleted,
-                        currentLoad: (seriesIndex) => provider.currentLoad(exercise, seriesIndex),
-                        onLoadChanged: (seriesIndex, value) =>
-                            provider.setCurrentLoad(exercise, seriesIndex, value),
+                        currentLoad: (seriesIndex) =>
+                            provider.currentLoad(exercise, seriesIndex),
+                        onLoadChanged: (seriesIndex, value) => provider
+                            .setCurrentLoad(exercise, seriesIndex, value),
                       );
                     },
                   ),
                 ),
-                if (provider.sessionActive && provider.sessionWeekday == weekday)
+                if (provider.sessionActive &&
+                    provider.sessionWeekday == weekday)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: SizedBox(
@@ -264,7 +292,11 @@ class _HojeScreenState extends State<HojeScreen> {
       if (!context.mounted) return;
       if (historyId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Marque pelo menos uma série concluída para salvar o treino.')),
+          const SnackBar(
+            content: Text(
+              'Marque pelo menos uma série concluída para salvar o treino.',
+            ),
+          ),
         );
         return;
       }
@@ -293,14 +325,16 @@ class _WorkoutExerciseCard extends StatelessWidget {
   final WorkoutPlanModel exercise;
   final bool enabled;
   final void Function(int seriesIndex, bool checked) onToggleSet;
-  final bool Function(WorkoutPlanModel exercise, int seriesIndex) isSetCompleted;
+  final bool Function(WorkoutPlanModel exercise, int seriesIndex)
+  isSetCompleted;
   final double Function(int seriesIndex) currentLoad;
   final void Function(int seriesIndex, double value) onLoadChanged;
 
   @override
   Widget build(BuildContext context) {
     final localPath = exercise.caminhoLocalGif;
-    final hasLocalFile = localPath != null &&
+    final hasLocalFile =
+        localPath != null &&
         localPath.isNotEmpty &&
         File(localPath).existsSync();
 
@@ -327,23 +361,37 @@ class _WorkoutExerciseCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                 ] else ...<Widget>[
-                  const Icon(Icons.fitness_center, color: Color(0xFF6C5CE7), size: 28),
+                  const Icon(
+                    Icons.fitness_center,
+                    color: Color(0xFF6C5CE7),
+                    size: 28,
+                  ),
                   const SizedBox(width: 10),
                 ],
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(exercise.nome, style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        exercise.nome,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 5),
                       Text(
                         '${exercise.series} séries × ${exercise.repeticoes} repetições',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      if (!hasLocalFile && localPath != null && localPath.isNotEmpty) ...<Widget>[
+                      if (!hasLocalFile &&
+                          localPath != null &&
+                          localPath.isNotEmpty) ...<Widget>[
                         const SizedBox(height: 4),
-                        const Text('Imagem não encontrada; exercício disponível normalmente.',
-                            style: TextStyle(color: Color(0xFF636E72), fontSize: 11)),
+                        const Text(
+                          'Imagem não encontrada; exercício disponível normalmente.',
+                          style: TextStyle(
+                            color: Color(0xFF636E72),
+                            fontSize: 11,
+                          ),
+                        ),
                       ],
                     ],
                   ),
@@ -370,28 +418,45 @@ class _WorkoutExerciseCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Text('Série ${seriesIndex + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                          Text('${exercise.repeticoes} repetições', style: Theme.of(context).textTheme.bodySmall),
+                          Text(
+                            'Série ${seriesIndex + 1}',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          Text(
+                            '${exercise.repeticoes} repetições',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                         ],
                       ),
                     ),
                     SizedBox(
                       width: 112,
                       child: TextFormField(
-                        key: ValueKey<String>('load-${exercise.id}-$seriesIndex'),
+                        key: ValueKey<String>(
+                          'load-${exercise.id}-$seriesIndex',
+                        ),
                         initialValue: _formatLoad(load),
                         enabled: enabled,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         textInputAction: TextInputAction.done,
                         decoration: const InputDecoration(
                           labelText: 'Carga (kg)',
                           suffixText: 'kg',
                           isDense: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 9, vertical: 11),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 11,
+                          ),
                         ),
                         onChanged: (text) {
-                          final parsed = double.tryParse(text.trim().replaceAll(',', '.'));
-                          if (parsed != null && parsed >= 0) onLoadChanged(seriesIndex, parsed);
+                          final parsed = double.tryParse(
+                            text.trim().replaceAll(',', '.'),
+                          );
+                          if (parsed != null && parsed >= 0) {
+                            onLoadChanged(seriesIndex, parsed);
+                          }
                         },
                       ),
                     ),
@@ -413,8 +478,9 @@ class _WorkoutExerciseCard extends StatelessWidget {
     );
   }
 
-  static String _formatLoad(double value) =>
-      value == value.roundToDouble() ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+  static String _formatLoad(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
 }
 
 class _ImageFallback extends StatelessWidget {
@@ -429,7 +495,11 @@ class _ImageFallback extends StatelessWidget {
         color: const Color(0xFFEDE9FF),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Icon(Icons.fitness_center, color: Color(0xFF6C5CE7), size: 30),
+      child: const Icon(
+        Icons.fitness_center,
+        color: Color(0xFF6C5CE7),
+        size: 30,
+      ),
     );
   }
 }
@@ -451,10 +521,221 @@ class _TimerPill extends StatelessWidget {
         children: <Widget>[
           const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF6C5CE7)),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF6C5CE7))),
+          Text(
+            text,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF6C5CE7),
+            ),
+          ),
         ],
       ),
     );
+  }
+}
+
+class _RestDurationPickerSheet extends StatefulWidget {
+  const _RestDurationPickerSheet({
+    required this.initialSeconds,
+    required this.onConfirm,
+  });
+
+  final int initialSeconds;
+  final ValueChanged<int> onConfirm;
+
+  @override
+  State<_RestDurationPickerSheet> createState() =>
+      _RestDurationPickerSheetState();
+}
+
+class _RestDurationPickerSheetState extends State<_RestDurationPickerSheet> {
+  static const int _maxSeconds = 600;
+  static const double _dialSize = 260;
+
+  late int _seconds;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _seconds = widget.initialSeconds.clamp(0, _maxSeconds);
+  }
+
+  void _updateFromPosition(Offset position) {
+    final center = Offset(_dialSize / 2, _dialSize / 2);
+
+    final dx = position.dx - center.dx;
+    final dy = position.dy - center.dy;
+
+    // Evita alterar o tempo ao tocar perto do centro.
+    if (math.sqrt(dx * dx + dy * dy) < 55) {
+      return;
+    }
+
+    final angle = math.atan2(dy, dx);
+
+    // O topo representa 00:00.
+    // O tempo aumenta no sentido horário.
+    final fraction = ((angle + math.pi / 2) / (2 * math.pi)) % 1.0;
+
+    final newSeconds = (fraction * _maxSeconds).round().clamp(0, _maxSeconds);
+
+    if (newSeconds != _seconds) {
+      setState(() {
+        _seconds = newSeconds;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const Text(
+            'Tempo de descanso',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Deslize o dedo ao redor do círculo para escolher.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanDown: (details) => _updateFromPosition(details.localPosition),
+            onPanUpdate: (details) =>
+                _updateFromPosition(details.localPosition),
+            onTapDown: (details) => _updateFromPosition(details.localPosition),
+            child: SizedBox(
+              width: _dialSize,
+              height: _dialSize,
+              child: CustomPaint(
+                painter: _RestDialPainter(seconds: _seconds),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const Icon(
+                        Icons.timer_outlined,
+                        size: 28,
+                        color: Color(0xFF6C5CE7),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _formatRestDuration(_seconds),
+                        style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF2D3436),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'MIN : SEG',
+                        style: TextStyle(
+                          fontSize: 11,
+                          letterSpacing: 2,
+                          color: Color(0xFF636E72),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancelar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () {
+                    widget.onConfirm(_seconds);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Confirmar'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RestDialPainter extends CustomPainter {
+  const _RestDialPainter({required this.seconds});
+
+  final int seconds;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const maxSeconds = 600;
+
+    final center = Offset(size.width / 2, size.height / 2);
+
+    final radius = math.min(size.width, size.height) / 2 - 16;
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final trackPaint = Paint()
+      ..color = const Color(0xFFEDE9FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    final progressPaint = Paint()
+      ..color = const Color(0xFF6C5CE7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    final progress = seconds / maxSeconds;
+
+    canvas.drawArc(
+      rect,
+      -math.pi / 2,
+      2 * math.pi * progress,
+      false,
+      progressPaint,
+    );
+
+    // O marcador indica a posição selecionada no relógio.
+    final angle = -math.pi / 2 + 2 * math.pi * progress;
+
+    final markerCenter = Offset(
+      center.dx + radius * math.cos(angle),
+      center.dy + radius * math.sin(angle),
+    );
+
+    canvas.drawCircle(
+      markerCenter,
+      10,
+      Paint()..color = const Color(0xFF6C5CE7),
+    );
+
+    canvas.drawCircle(markerCenter, 4, Paint()..color = Colors.white);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RestDialPainter oldDelegate) {
+    return oldDelegate.seconds != seconds;
   }
 }
 
@@ -474,7 +755,9 @@ class _RestTimerSheet extends StatelessWidget {
         builder: (context, state, _) {
           final remaining = state.restRemainingSeconds;
           final total = state.restDurationSeconds;
-          final progress = total == 0 ? 0.0 : (remaining / total).clamp(0.0, 1.0).toDouble();
+          final progress = total == 0
+              ? 0.0
+              : (remaining / total).clamp(0.0, 1.0).toDouble();
           final finished = !state.restTimerActive && remaining == 0;
           return Column(
             mainAxisSize: MainAxisSize.min,
@@ -510,7 +793,9 @@ class _RestTimerSheet extends StatelessWidget {
                         value: progress,
                         strokeWidth: 10,
                         backgroundColor: const Color(0xFFEDE9FF),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6C5CE7)),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF6C5CE7),
+                        ),
                       ),
                     ),
                     Text(
@@ -565,11 +850,18 @@ class _LoadError extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(Icons.error_outline, size: 42, color: Color(0xFF6C5CE7)),
+              const Icon(
+                Icons.error_outline,
+                size: 42,
+                color: Color(0xFF6C5CE7),
+              ),
               const SizedBox(height: 12),
               Text(error, textAlign: TextAlign.center),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: onRetry, child: const Text('Tentar novamente')),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: const Text('Tentar novamente'),
+              ),
             ],
           ),
         ),
@@ -584,4 +876,12 @@ String _formatDuration(Duration duration) {
   final minutes = twoDigits(duration.inMinutes.remainder(60));
   final seconds = twoDigits(duration.inSeconds.remainder(60));
   return '$hours:$minutes:$seconds';
+}
+
+String _formatRestDuration(int seconds) {
+  final minutes = seconds ~/ 60;
+  final remainingSeconds = seconds % 60;
+
+  return '${minutes.toString().padLeft(2, '0')}:'
+      '${remainingSeconds.toString().padLeft(2, '0')}';
 }

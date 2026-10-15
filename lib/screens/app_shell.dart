@@ -31,9 +31,9 @@ class _AppShellState extends State<AppShell> {
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF6C5CE7),
-        unselectedItemColor: const Color(0xFFB2BEC3),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        selectedItemColor: Theme.of(context).colorScheme.primary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

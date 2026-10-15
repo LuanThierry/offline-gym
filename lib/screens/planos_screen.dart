@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../models/workout_plan_model.dart';
 import '../providers/workout_provider.dart';
 
+import '../widgets/theme_toggle_button.dart';
+
 class PlanosScreen extends StatelessWidget {
   const PlanosScreen({super.key});
 
@@ -17,6 +19,7 @@ class PlanosScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Planos da semana'),
+        actions: const [ThemeToggleButton()],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(34),
           child: Padding(
@@ -85,12 +88,17 @@ class PlanosScreen extends StatelessWidget {
       ),
       builder: (_) => SizedBox(
         height: MediaQuery.of(context).size.height * 0.92,
-        child: DayPlanEditorSheet(weekday: weekday, initialExercises: exercises),
+        child: DayPlanEditorSheet(
+          weekday: weekday,
+          initialExercises: exercises,
+        ),
       ),
     );
     if (saved == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${WorkoutPlanModel.weekdayName(weekday)} atualizado.')),
+        SnackBar(
+          content: Text('${WorkoutPlanModel.weekdayName(weekday)} atualizado.'),
+        ),
       );
     }
   }
@@ -145,7 +153,10 @@ class _DayPlanCard extends StatelessWidget {
                 ),
                 if (hasExercises)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEAF8F0),
                       borderRadius: BorderRadius.circular(20),
@@ -171,19 +182,27 @@ class _DayPlanCard extends StatelessWidget {
               Wrap(
                 spacing: 7,
                 runSpacing: 7,
-                children: exercises.map((exercise) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F4FF),
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Text(
-                      exercise.nome,
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF5144B5)),
-                    ),
-                  );
-                }).toList(growable: false),
+                children: exercises
+                    .map((exercise) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F4FF),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          exercise.nome,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF5144B5),
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(growable: false),
               ),
             const SizedBox(height: 14),
             SizedBox(
@@ -191,7 +210,9 @@ class _DayPlanCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onPressed,
                 icon: Icon(hasExercises ? Icons.edit_outlined : Icons.add),
-                label: Text(hasExercises ? 'Editar treino' : 'Adicionar Exercícios'),
+                label: Text(
+                  hasExercises ? 'Editar treino' : 'Adicionar Exercícios',
+                ),
               ),
             ),
           ],
@@ -253,11 +274,21 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
       final picked = await _imagePicker.pickImage(source: ImageSource.gallery);
       if (picked == null || !mounted) return;
 
-      final extension = p.extension(picked.name.isNotEmpty ? picked.name : picked.path).toLowerCase();
-      const allowedExtensions = <String>{'.gif', '.png', '.jpg', '.jpeg', '.webp'};
+      final extension = p
+          .extension(picked.name.isNotEmpty ? picked.name : picked.path)
+          .toLowerCase();
+      const allowedExtensions = <String>{
+        '.gif',
+        '.png',
+        '.jpg',
+        '.jpeg',
+        '.webp',
+      };
       if (!allowedExtensions.contains(extension)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Escolha um arquivo GIF, PNG, JPG, JPEG ou WEBP.')),
+          const SnackBar(
+            content: Text('Escolha um arquivo GIF, PNG, JPG, JPEG ou WEBP.'),
+          ),
         );
         return;
       }
@@ -281,7 +312,8 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
       final documents = await getApplicationDocumentsDirectory();
       final mediaDirectory = Directory(p.join(documents.path, 'exercise_gifs'));
       await mediaDirectory.create(recursive: true);
-      final fileName = 'exercise_${DateTime.now().microsecondsSinceEpoch}$extension';
+      final fileName =
+          'exercise_${DateTime.now().microsecondsSinceEpoch}$extension';
       final destination = File(p.join(mediaDirectory.path, fileName));
       await File(picked.path).copy(destination.path);
       if (!mounted) return;
@@ -290,7 +322,9 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
         draft.caminhoLocalGif = destination.path;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Imagem salva no celular para uso offline.')),
+        const SnackBar(
+          content: Text('Imagem salva no celular para uso offline.'),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -305,26 +339,35 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
     if (_drafts.isNotEmpty && !_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
-    final exercises = _drafts.map((draft) {
-      final parsedLoad = double.tryParse(
-            draft.loadController.text.trim().replaceAll(',', '.'),
-          ) ??
-          0;
-      return WorkoutPlanModel(
-        diaSemana: widget.weekday,
-        nome: draft.nameController.text.trim(),
-        carga: parsedLoad,
-        series: int.tryParse(draft.seriesController.text.trim()) ?? 3,
-        repeticoes: int.tryParse(draft.repetitionsController.text.trim()) ?? 10,
-        // Retain no remote URL. Existing legacy urlGif values are not reused.
-        urlGif: null,
-        caminhoLocalGif: draft.caminhoLocalGif,
-      );
-    }).toList(growable: false);
+    final exercises = _drafts
+        .map((draft) {
+          final parsedLoad =
+              double.tryParse(
+                draft.loadController.text.trim().replaceAll(',', '.'),
+              ) ??
+              0;
+          return WorkoutPlanModel(
+            diaSemana: widget.weekday,
+            nome: draft.nameController.text.trim(),
+            carga: parsedLoad,
+            series: int.tryParse(draft.seriesController.text.trim()) ?? 3,
+            repeticoes:
+                int.tryParse(draft.repetitionsController.text.trim()) ?? 10,
+            // Retain no remote URL. Existing legacy urlGif values are not reused.
+            urlGif: null,
+            caminhoLocalGif: draft.caminhoLocalGif,
+          );
+        })
+        .toList(growable: false);
 
     try {
-      await context.read<WorkoutProvider>().saveDayExercises(widget.weekday, exercises);
-      if (mounted) Navigator.of(context).pop(true);
+      await context.read<WorkoutProvider>().saveDayExercises(
+        widget.weekday,
+        exercises,
+      );
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() => _saving = false);
@@ -339,7 +382,9 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
     final dayName = WorkoutPlanModel.weekdayName(widget.weekday);
     return AnimatedPadding(
       duration: const Duration(milliseconds: 150),
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         children: <Widget>[
           Padding(
@@ -350,17 +395,25 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(dayName, style: Theme.of(context).textTheme.titleLarge),
+                      Text(
+                        dayName,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                       const SizedBox(height: 4),
                       const Text(
                         'Adicione, edite ou remova exercícios.',
-                        style: TextStyle(color: Color(0xFF636E72), fontSize: 12),
+                        style: TextStyle(
+                          color: Color(0xFF636E72),
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+                  onPressed: _saving
+                      ? null
+                      : () => Navigator.of(context).pop(false),
                   icon: const Icon(Icons.close),
                 ),
               ],
@@ -376,7 +429,8 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, itemIndex) {
                   final draft = _drafts[itemIndex];
-                  final hasSavedImage = draft.caminhoLocalGif != null &&
+                  final hasSavedImage =
+                      draft.caminhoLocalGif != null &&
                       File(draft.caminhoLocalGif!).existsSync();
                   return Card(
                     child: Padding(
@@ -389,13 +443,20 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                               Expanded(
                                 child: Text(
                                   'Exercício ${itemIndex + 1}',
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                 ),
                               ),
                               IconButton(
                                 tooltip: 'Remover exercício',
-                                onPressed: _saving ? null : () => _removeDraft(itemIndex),
-                                icon: const Icon(Icons.delete_outline, color: Color(0xFFD63031)),
+                                onPressed: _saving
+                                    ? null
+                                    : () => _removeDraft(itemIndex),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Color(0xFFD63031),
+                                ),
                               ),
                             ],
                           ),
@@ -408,7 +469,8 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                               hintText: 'Ex.: Supino reto',
                               prefixIcon: Icon(Icons.fitness_center),
                             ),
-                            validator: (value) => (value == null || value.trim().isEmpty)
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
                                 ? 'Informe o nome do exercício.'
                                 : null,
                           ),
@@ -418,11 +480,20 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                               Expanded(
                                 child: TextFormField(
                                   controller: draft.loadController,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                  decoration: const InputDecoration(labelText: 'Carga (kg)'),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Carga (kg)',
+                                  ),
                                   validator: (value) {
-                                    final parsed = double.tryParse((value ?? '').replaceAll(',', '.'));
-                                    if (parsed == null || parsed < 0) return 'Use 0 ou mais.';
+                                    final parsed = double.tryParse(
+                                      (value ?? '').replaceAll(',', '.'),
+                                    );
+                                    if (parsed == null || parsed < 0) {
+                                      return 'Use 0 ou mais.';
+                                    }
                                     return null;
                                   },
                                 ),
@@ -432,10 +503,14 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                                 child: TextFormField(
                                   controller: draft.seriesController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Séries'),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Séries',
+                                  ),
                                   validator: (value) {
                                     final parsed = int.tryParse(value ?? '');
-                                    if (parsed == null || parsed < 1 || parsed > 30) {
+                                    if (parsed == null ||
+                                        parsed < 1 ||
+                                        parsed > 30) {
                                       return 'Use 1 a 30.';
                                     }
                                     return null;
@@ -447,10 +522,14 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                                 child: TextFormField(
                                   controller: draft.repetitionsController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(labelText: 'Repetições'),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Repetições',
+                                  ),
                                   validator: (value) {
                                     final parsed = int.tryParse(value ?? '');
-                                    if (parsed == null || parsed < 1 || parsed > 500) {
+                                    if (parsed == null ||
+                                        parsed < 1 ||
+                                        parsed > 500) {
                                       return 'Use 1 a 500.';
                                     }
                                     return null;
@@ -461,24 +540,37 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                           ),
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
-                            onPressed: _saving ? null : () => _chooseImage(itemIndex),
-                            icon: Icon(hasSavedImage
-                                ? Icons.check_circle
-                                : Icons.image_search_outlined),
-                            label: Text(hasSavedImage
-                                ? 'Foto/GIF salvo para uso offline'
-                                : 'Escolher foto/GIF da galeria (opcional)'),
+                            onPressed: _saving
+                                ? null
+                                : () => _chooseImage(itemIndex),
+                            icon: Icon(
+                              hasSavedImage
+                                  ? Icons.check_circle
+                                  : Icons.image_search_outlined,
+                            ),
+                            label: Text(
+                              hasSavedImage
+                                  ? 'Foto/GIF salvo para uso offline'
+                                  : 'Escolher foto/GIF da galeria (opcional)',
+                            ),
                           ),
                           if (hasSavedImage) ...<Widget>[
                             const SizedBox(height: 8),
                             Row(
                               children: <Widget>[
-                                const Icon(Icons.offline_pin, size: 17, color: Color(0xFF238754)),
+                                const Icon(
+                                  Icons.offline_pin,
+                                  size: 17,
+                                  color: Color(0xFF238754),
+                                ),
                                 const SizedBox(width: 6),
                                 const Expanded(
                                   child: Text(
                                     'Imagem disponível localmente',
-                                    style: TextStyle(color: Color(0xFF238754), fontSize: 12),
+                                    style: TextStyle(
+                                      color: Color(0xFF238754),
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                                 TextButton(
@@ -520,7 +612,10 @@ class _DayPlanEditorSheetState extends State<DayPlanEditorSheet> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           )
                         : const Icon(Icons.check),
                     label: Text(_saving ? 'Salvando...' : 'Concluído'),
@@ -551,19 +646,21 @@ class _ExerciseDraft {
   String? caminhoLocalGif;
 
   factory _ExerciseDraft.empty() => _ExerciseDraft(
-        nameController: TextEditingController(),
-        loadController: TextEditingController(text: '0'),
-        seriesController: TextEditingController(text: '3'),
-        repetitionsController: TextEditingController(text: '10'),
-      );
+    nameController: TextEditingController(),
+    loadController: TextEditingController(text: '0'),
+    seriesController: TextEditingController(text: '3'),
+    repetitionsController: TextEditingController(text: '10'),
+  );
 
   factory _ExerciseDraft.fromPlan(WorkoutPlanModel plan) => _ExerciseDraft(
-        nameController: TextEditingController(text: plan.nome),
-        loadController: TextEditingController(text: _numberText(plan.carga)),
-        seriesController: TextEditingController(text: plan.series.toString()),
-        repetitionsController: TextEditingController(text: plan.repeticoes.toString()),
-        caminhoLocalGif: plan.caminhoLocalGif,
-      );
+    nameController: TextEditingController(text: plan.nome),
+    loadController: TextEditingController(text: _numberText(plan.carga)),
+    seriesController: TextEditingController(text: plan.series.toString()),
+    repetitionsController: TextEditingController(
+      text: plan.repeticoes.toString(),
+    ),
+    caminhoLocalGif: plan.caminhoLocalGif,
+  );
 
   void dispose() {
     nameController.dispose();
@@ -572,7 +669,7 @@ class _ExerciseDraft {
     repetitionsController.dispose();
   }
 
-  static String _numberText(double value) =>
-      value == value.roundToDouble() ? value.toStringAsFixed(0) : value.toString();
+  static String _numberText(double value) => value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toString();
 }
-

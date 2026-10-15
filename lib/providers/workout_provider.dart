@@ -171,14 +171,20 @@ class WorkoutProvider extends ChangeNotifier {
   }
 
   void setRestDuration(int seconds) {
-    if (![30, 60, 90].contains(seconds)) return;
+    // Aceita descansos entre 0 e 600 segundos (10 minutos).
+    if (seconds < 0 || seconds > 600) return;
+
     _restDurationSeconds = seconds;
+
     if (_sessionActive) {
-      unawaited(_database.updateActiveWorkoutRest(
-        descansoSegundos: seconds,
-        descansoAteISO: _restEndsAt?.toIso8601String(),
-      ));
+      unawaited(
+        _database.updateActiveWorkoutRest(
+          descansoSegundos: seconds,
+          descansoAteISO: _restEndsAt?.toIso8601String(),
+        ),
+      );
     }
+
     notifyListeners();
   }
 
@@ -309,8 +315,11 @@ class WorkoutProvider extends ChangeNotifier {
     _sessionStartedAt = startedAt;
     _sessionWeekday = snapshot.diaSemana;
     _sessionExercises = snapshot.exercises.map((item) => item.exercise).toList(growable: false);
-    _restDurationSeconds = [30, 60, 90].contains(snapshot.descansoSegundos)
-        ? snapshot.descansoSegundos
+    final savedRestDuration = snapshot.descansoSegundos;
+
+    _restDurationSeconds =
+    savedRestDuration >= 0 && savedRestDuration <= 600
+        ? savedRestDuration
         : 60;
     _sessionActive = _sessionExercises.isNotEmpty;
     _sessionElapsed = DateTime.now().difference(startedAt);

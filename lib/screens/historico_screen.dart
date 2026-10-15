@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 
+import 'historico_treinos_completo_screen.dart';
+import 'peso_corporal_completo_screen.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +11,8 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../models/workout_plan_model.dart';
 import '../providers/workout_provider.dart';
+
+import '../widgets/theme_toggle_button.dart';
 
 class HistoricoScreen extends StatefulWidget {
   const HistoricoScreen({super.key});
@@ -19,7 +24,6 @@ class HistoricoScreen extends StatefulWidget {
 class _HistoricoScreenState extends State<HistoricoScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  bool _showAllHistory = false;
   bool _showBodyWeightChart = false;
 
   @override
@@ -29,13 +33,19 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         final hasPlannedExercises = provider.plannedExerciseNames.isNotEmpty;
         final hasCompletedWorkouts = provider.history.isNotEmpty;
         final selectedDate = _selectedDay ?? _focusedDay;
-        final hasTrainingSelected = provider.hasCompletedWorkoutOn(selectedDate);
-        final visibleHistory = _showAllHistory
-            ? provider.history
-            : provider.history.take(8).toList(growable: false);
+        final hasTrainingSelected = provider.hasCompletedWorkoutOn(
+          selectedDate,
+        );
+        final visibleHistory = provider.history.take(3).toList(growable: false);
 
+        final visibleBodyWeights = provider.bodyWeights
+            .take(3)
+            .toList(growable: false);
         return Scaffold(
-          appBar: AppBar(title: const Text('Histórico e evolução')),
+          appBar: AppBar(
+            title: const Text('Histórico e evolução'),
+            actions: const [ThemeToggleButton()],
+          ),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: <Widget>[
@@ -49,7 +59,11 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                   ),
                   child: const Row(
                     children: <Widget>[
-                      Icon(Icons.insights_outlined, color: Color(0xFF6C5CE7), size: 30),
+                      Icon(
+                        Icons.insights_outlined,
+                        color: Color(0xFF6C5CE7),
+                        size: 30,
+                      ),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -62,7 +76,7 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 ),
                 const SizedBox(height: 18),
               ],
-              Text('Assiduidade', style: Theme.of(context).textTheme.titleLarge),
+              Text('Relatório!', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 10),
               Card(
                 child: Padding(
@@ -88,12 +102,24 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     headerStyle: const HeaderStyle(
                       formatButtonVisible: false,
                       titleCentered: true,
-                      leftChevronIcon: Icon(Icons.chevron_left, color: Color(0xFF6C5CE7)),
-                      rightChevronIcon: Icon(Icons.chevron_right, color: Color(0xFF6C5CE7)),
+                      leftChevronIcon: Icon(
+                        Icons.chevron_left,
+                        color: Color(0xFF6C5CE7),
+                      ),
+                      rightChevronIcon: Icon(
+                        Icons.chevron_right,
+                        color: Color(0xFF6C5CE7),
+                      ),
                     ),
                     daysOfWeekStyle: const DaysOfWeekStyle(
-                      weekdayStyle: TextStyle(color: Color(0xFF636E72), fontSize: 12),
-                      weekendStyle: TextStyle(color: Color(0xFF636E72), fontSize: 12),
+                      weekdayStyle: TextStyle(
+                        color: Color(0xFF636E72),
+                        fontSize: 12,
+                      ),
+                      weekendStyle: TextStyle(
+                        color: Color(0xFF636E72),
+                        fontSize: 12,
+                      ),
                     ),
                     calendarStyle: const CalendarStyle(
                       outsideDaysVisible: false,
@@ -119,21 +145,31 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
               Container(
                 padding: const EdgeInsets.all(13),
                 decoration: BoxDecoration(
-                  color: hasTrainingSelected ? const Color(0xFFEAF8F0) : Colors.white,
+                  color: hasTrainingSelected
+                      ? (Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF183629)
+                            : const Color(0xFFEAF8F0))
+                      : Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: hasTrainingSelected
-                        ? const Color(0xFFBDE8CD)
-                        : const Color(0xFFE6E7EF),
+                        ? (Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF285B40)
+                              : const Color(0xFFBDE8CD))
+                        : Theme.of(context).colorScheme.outlineVariant,
                   ),
                 ),
                 child: Row(
                   children: <Widget>[
                     Icon(
-                      hasTrainingSelected ? Icons.check_circle : Icons.event_available,
+                      hasTrainingSelected
+                          ? Icons.check_circle
+                          : Icons.event_available,
                       color: hasTrainingSelected
-                          ? const Color(0xFF238754)
-                          : const Color(0xFF8C7AE6),
+                          ? (Theme.of(context).brightness == Brightness.dark
+                                ? const Color(0xFF6FD39A)
+                                : const Color(0xFF238754))
+                          : Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -141,7 +177,10 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                         hasTrainingSelected
                             ? 'Treino concluído em ${DateFormat('dd/MM/yyyy').format(selectedDate)}'
                             : 'Nenhum treino concluído em ${DateFormat('dd/MM/yyyy').format(selectedDate)}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                     ),
                   ],
@@ -156,12 +195,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                   ChoiceChip(
                     label: const Text('Exercício'),
                     selected: !_showBodyWeightChart,
-                    onSelected: (_) => setState(() => _showBodyWeightChart = false),
+                    onSelected: (_) =>
+                        setState(() => _showBodyWeightChart = false),
                   ),
                   ChoiceChip(
                     label: const Text('Peso corporal'),
                     selected: _showBodyWeightChart,
-                    onSelected: (_) => setState(() => _showBodyWeightChart = true),
+                    onSelected: (_) =>
+                        setState(() => _showBodyWeightChart = true),
                   ),
                 ],
               ),
@@ -171,14 +212,22 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                   padding: const EdgeInsets.all(16),
                   child: _showBodyWeightChart
                       ? _buildBodyWeightChart(provider)
-                      : _buildExerciseChart(context, provider, hasPlannedExercises, hasCompletedWorkouts),
+                      : _buildExerciseChart(
+                          context,
+                          provider,
+                          hasPlannedExercises,
+                          hasCompletedWorkouts,
+                        ),
                 ),
               ),
               const SizedBox(height: 22),
               Row(
                 children: <Widget>[
                   Expanded(
-                    child: Text('Peso corporal', style: Theme.of(context).textTheme.titleLarge),
+                    child: Text(
+                      'Peso corporal',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                   ),
                   ElevatedButton.icon(
                     onPressed: () => _registerBodyWeight(context, provider),
@@ -198,9 +247,11 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     ),
                   ),
                 )
-              else
-                ...provider.bodyWeights.map((record) {
-                  final date = DateTime.tryParse(record.dataISO) ?? DateTime.now();
+              else ...<Widget>[
+                ...visibleBodyWeights.map((record) {
+                  final date =
+                      DateTime.tryParse(record.dataISO) ?? DateTime.now();
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
@@ -212,22 +263,51 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                             color: const Color(0xFFEDE9FF),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.monitor_weight_outlined, color: Color(0xFF6C5CE7)),
+                          child: const Icon(
+                            Icons.monitor_weight_outlined,
+                            color: Color(0xFF6C5CE7),
+                          ),
                         ),
                         title: Text('${record.pesoKg.toStringAsFixed(1)} kg'),
                         subtitle: Text(DateFormat('dd/MM/yyyy').format(date)),
                         trailing: IconButton(
                           tooltip: 'Excluir registro de peso',
-                          icon: const Icon(Icons.delete_outline, color: Color(0xFFD63031)),
-                          onPressed: () => _deleteBodyWeight(context, provider, record.id),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Color(0xFFD63031),
+                          ),
+                          onPressed: () =>
+                              _deleteBodyWeight(context, provider, record.id),
                         ),
                       ),
                     ),
                   );
                 }),
+                if (provider.bodyWeights.length > 3)
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const PesoCorporalCompletoScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_forward),
+                      label: Text('Ver todos (${provider.bodyWeights.length})'),
+                    ),
+                  ),
+              ],
+
               const SizedBox(height: 18),
-              Text('Últimos treinos', style: Theme.of(context).textTheme.titleLarge),
+
+              Text(
+                'Últimos treinos',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+
               const SizedBox(height: 10),
+
               if (provider.history.isEmpty)
                 const Card(
                   child: Padding(
@@ -237,8 +317,13 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                 )
               else ...<Widget>[
                 ...visibleHistory.map((workout) {
-                  final date = DateTime.tryParse(workout.dataISO) ?? DateTime.now();
-                  final duration = Duration(seconds: workout.tempoTotalSegundos);
+                  final date =
+                      DateTime.tryParse(workout.dataISO) ?? DateTime.now();
+
+                  final duration = Duration(
+                    seconds: workout.tempoTotalSegundos,
+                  );
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
@@ -250,10 +335,17 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                             color: const Color(0xFFEDE9FF),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.check, color: Color(0xFF6C5CE7)),
+                          child: const Icon(
+                            Icons.check,
+                            color: Color(0xFF6C5CE7),
+                          ),
                         ),
-                        title: Text(WorkoutPlanModel.weekdayName(workout.diaSemana)),
-                        subtitle: Text(DateFormat('dd/MM/yyyy · HH:mm').format(date)),
+                        title: Text(
+                          WorkoutPlanModel.weekdayName(workout.diaSemana),
+                        ),
+                        subtitle: Text(
+                          DateFormat('dd/MM/yyyy · HH:mm').format(date),
+                        ),
                         trailing: SizedBox(
                           width: 115,
                           child: Row(
@@ -268,8 +360,16 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                               ),
                               IconButton(
                                 tooltip: 'Excluir treino do histórico',
-                                icon: const Icon(Icons.delete_outline, color: Color(0xFFD63031)),
-                                onPressed: () => _deleteWorkout(context, provider, workout.id, date),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Color(0xFFD63031),
+                                ),
+                                onPressed: () => _deleteWorkout(
+                                  context,
+                                  provider,
+                                  workout.id,
+                                  date,
+                                ),
                               ),
                             ],
                           ),
@@ -278,12 +378,19 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
                     ),
                   );
                 }),
-                if (provider.history.length > 8)
+                if (provider.history.length > 3)
                   Center(
                     child: TextButton.icon(
-                      onPressed: () => setState(() => _showAllHistory = !_showAllHistory),
-                      icon: Icon(_showAllHistory ? Icons.expand_less : Icons.expand_more),
-                      label: Text(_showAllHistory ? 'Mostrar menos' : 'Ver todos (${provider.history.length})'),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                const HistoricoTreinosCompletoScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.arrow_forward),
+                      label: Text('Ver todos (${provider.history.length})'),
                     ),
                   ),
               ],
@@ -320,10 +427,12 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
             prefixIcon: Icon(Icons.fitness_center),
           ),
           items: provider.plannedExerciseNames
-              .map((name) => DropdownMenuItem<String>(
-                    value: name,
-                    child: Text(name, overflow: TextOverflow.ellipsis),
-                  ))
+              .map(
+                (name) => DropdownMenuItem<String>(
+                  value: name,
+                  child: Text(name, overflow: TextOverflow.ellipsis),
+                ),
+              )
               .toList(growable: false),
           onChanged: (value) {
             if (value != null) provider.selectEvolutionExercise(value);
@@ -340,9 +449,15 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
             ),
           )
         else ...<Widget>[
-          Text('Carga máxima por dia (kg)', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            'Carga máxima por dia (kg)',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: 12),
-          SizedBox(height: 250, child: _EvolutionLineChart(points: provider.evolutionPoints)),
+          SizedBox(
+            height: 250,
+            child: _EvolutionLineChart(points: provider.evolutionPoints),
+          ),
         ],
       ],
     );
@@ -364,12 +479,18 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
       children: <Widget>[
         const Text('Evolução do peso corporal (kg)'),
         const SizedBox(height: 12),
-        SizedBox(height: 250, child: _EvolutionLineChart(points: provider.bodyWeightPoints)),
+        SizedBox(
+          height: 250,
+          child: _EvolutionLineChart(points: provider.bodyWeightPoints),
+        ),
       ],
     );
   }
 
-  Future<void> _registerBodyWeight(BuildContext context, WorkoutProvider provider) async {
+  Future<void> _registerBodyWeight(
+    BuildContext context,
+    WorkoutProvider provider,
+  ) async {
     final input = await showDialog<_BodyWeightInput>(
       context: context,
       builder: (_) => const _BodyWeightDialog(),
@@ -400,8 +521,14 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
         title: const Text('Excluir registro de peso?'),
         content: const Text('Este registro será removido permanentemente.'),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Excluir')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Excluir'),
+          ),
         ],
       ),
     );
@@ -419,10 +546,18 @@ class _HistoricoScreenState extends State<HistoricoScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Excluir treino do histórico?'),
-        content: Text('O treino de ${DateFormat('dd/MM/yyyy HH:mm').format(date)} e suas séries serão removidos.'),
+        content: Text(
+          'O treino de ${DateFormat('dd/MM/yyyy HH:mm').format(date)} e suas séries serão removidos.',
+        ),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Excluir')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Excluir'),
+          ),
         ],
       ),
     );
@@ -480,15 +615,23 @@ class _BodyWeightDialogState extends State<_BodyWeightDialog> {
   }
 
   void _save() {
-    final parsed = double.tryParse(_weightController.text.trim().replaceAll(',', '.'));
+    final parsed = double.tryParse(
+      _weightController.text.trim().replaceAll(',', '.'),
+    );
     if (parsed == null || !parsed.isFinite || parsed <= 0 || parsed > 500) {
       setState(() => _error = 'Informe um peso válido em kg.');
       return;
     }
-    Navigator.of(context).pop(_BodyWeightInput(
-      date: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day),
-      weightKg: parsed,
-    ));
+    Navigator.of(context).pop(
+      _BodyWeightInput(
+        date: DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+        ),
+        weightKg: parsed,
+      ),
+    );
   }
 
   @override
@@ -519,13 +662,19 @@ class _BodyWeightDialogState extends State<_BodyWeightDialog> {
             const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(_error!, style: const TextStyle(color: Color(0xFFD63031), fontSize: 12)),
+              child: Text(
+                _error!,
+                style: const TextStyle(color: Color(0xFFD63031), fontSize: 12),
+              ),
             ),
           ],
         ],
       ),
       actions: <Widget>[
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
         ElevatedButton(onPressed: _save, child: const Text('Salvar')),
       ],
     );
@@ -547,10 +696,14 @@ class _EvolutionLineChart extends StatelessWidget {
     final loads = points.map((point) => point.loadKg).toList(growable: false);
     final minLoad = loads.reduce((a, b) => math.min(a, b).toDouble());
     final maxLoad = loads.reduce((a, b) => math.max(a, b).toDouble());
-    final minY = math.max(0.0, minLoad - (minLoad > 0 ? minLoad * 0.12 : 0)).toDouble();
+    final minY = math
+        .max(0.0, minLoad - (minLoad > 0 ? minLoad * 0.12 : 0))
+        .toDouble();
     final maxY = (maxLoad + (maxLoad > 0 ? maxLoad * 0.12 : 5)).toDouble();
     final maxX = points.length <= 1 ? 0.5 : (points.length - 1).toDouble();
-    final interval = points.length > 6 ? (points.length / 5).ceilToDouble() : 1.0;
+    final interval = points.length > 6
+        ? (points.length / 5).ceilToDouble()
+        : 1.0;
 
     return LineChart(
       LineChartData(
@@ -561,8 +714,12 @@ class _EvolutionLineChart extends StatelessWidget {
         gridData: const FlGridData(show: true, drawVerticalLine: false),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           leftTitles: AxisTitles(
             axisNameWidget: const Text('kg', style: TextStyle(fontSize: 11)),
             sideTitles: SideTitles(
@@ -570,7 +727,10 @@ class _EvolutionLineChart extends StatelessWidget {
               reservedSize: 38,
               getTitlesWidget: (value, meta) => Padding(
                 padding: const EdgeInsets.only(right: 5),
-                child: Text(value.toStringAsFixed(0), style: const TextStyle(fontSize: 10)),
+                child: Text(
+                  value.toStringAsFixed(0),
+                  style: const TextStyle(fontSize: 10),
+                ),
               ),
             ),
           ),
@@ -581,12 +741,17 @@ class _EvolutionLineChart extends StatelessWidget {
               interval: interval,
               getTitlesWidget: (value, meta) {
                 final index = value.round();
-                if ((value - index).abs() > 0.15 || index < 0 || index >= points.length) {
+                if ((value - index).abs() > 0.15 ||
+                    index < 0 ||
+                    index >= points.length) {
                   return const SizedBox.shrink();
                 }
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: Text(DateFormat('dd/MM').format(points[index].date), style: const TextStyle(fontSize: 10)),
+                  child: Text(
+                    DateFormat('dd/MM').format(points[index].date),
+                    style: const TextStyle(fontSize: 10),
+                  ),
                 );
               },
             ),
@@ -595,14 +760,22 @@ class _EvolutionLineChart extends StatelessWidget {
         lineTouchData: LineTouchData(
           handleBuiltInTouches: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (touchedSpots) => touchedSpots.map((spot) {
-              final index = spot.x.round().clamp(0, points.length - 1).toInt();
-              final point = points[index];
-              return LineTooltipItem(
-                '${point.loadKg.toStringAsFixed(1)} kg\n${DateFormat('dd/MM/yyyy').format(point.date)}',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-              );
-            }).toList(growable: false),
+            getTooltipItems: (touchedSpots) => touchedSpots
+                .map((spot) {
+                  final index = spot.x
+                      .round()
+                      .clamp(0, points.length - 1)
+                      .toInt();
+                  final point = points[index];
+                  return LineTooltipItem(
+                    '${point.loadKg.toStringAsFixed(1)} kg\n${DateFormat('dd/MM/yyyy').format(point.date)}',
+                    const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  );
+                })
+                .toList(growable: false),
           ),
         ),
         lineBarsData: <LineChartBarData>[
@@ -613,7 +786,10 @@ class _EvolutionLineChart extends StatelessWidget {
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: true),
-            belowBarData: BarAreaData(show: true, color: const Color(0x226C5CE7)),
+            belowBarData: BarAreaData(
+              show: true,
+              color: const Color(0x226C5CE7),
+            ),
           ),
         ],
       ),
