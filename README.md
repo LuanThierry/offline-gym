@@ -78,9 +78,7 @@ Interface real do aplicativo, nas versões clara e escura.
     </td>
   </tr>
 </table>
-
-### Demonstração
-
+<hr>
 <p align="center">
   <img src="docs/screenshots/video.gif" alt="Demonstração do Offline Gym" width="320">
 </p>
