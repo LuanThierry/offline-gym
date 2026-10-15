@@ -1,88 +1,148 @@
-<div align="center">
+<div align="center"> 
+  
+![Banner](docs/screenshots/banner.jpg) 
+# Offline Gym
 
-#  Offline Gym
+### Seu treino organizado. Seus registros no seu aparelho. Sem depender de internet.
 
-**Seus treinos organizados, mesmo sem internet.**
+O **Offline Gym** é um aplicativo Android para planejar treinos, registrar séries e cargas e acompanhar a evolução — com foco em uma experiência simples e **offline-first**.
 
-Aplicativo Android feito com **Flutter, Dart e SQLite**, com foco em simplicidade, funcionamento offline e armazenamento local.
+[📲 Baixar para Android](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym.apk) · [Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym)
 
-[ Baixar APK para Android](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym.apk) · [ Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [ Código-fonte](https://github.com/LuanThierry/offline-gym)
+[⭐ Apoiar a iniciativa com uma estrela](https://github.com/LuanThierry/offline-gym/stargazers)
 
-![Flutter](https://img.shields.io/badge/Flutter-mobile-02569B?logo=flutter&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-app-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-language-0175C2?logo=dart&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-local%20database-003B57?logo=sqlite&logoColor=white)
-![Status](https://img.shields.io/badge/status-projeto%20pessoal-informational)
+![SQLite](https://img.shields.io/badge/SQLite-dados%20locais-003B57?logo=sqlite&logoColor=white)
+![Android](https://img.shields.io/badge/plataforma-Android-3DDC84?logo=android&logoColor=white)
+![Offline-first](https://img.shields.io/badge/abordagem-offline--first-6C5CE7)
 
 </div>
 
 ---
 
-##  Sobre o projeto
+## Por que criei este aplicativo?
 
-Criei o **Offline Gym** para ter uma forma prática de organizar meus treinos sem depender de conexão com a internet. A ideia é reunir em um só lugar o planejamento dos exercícios, o acompanhamento das séries e cargas e o histórico do que foi realizado.
+O Offline Gym nasceu de uma necessidade minha: eu queria consultar meu planejamento e registrar o que realmente fazia durante o treino sem depender de uma conexão com a internet nem espalhar as informações por anotações diferentes.
 
-Eu queria priorizar algo que funcionasse de verdade no dia a dia: abrir o aplicativo na academia, consultar o treino, registrar o progresso e continuar mesmo quando a conexão não estiver disponível.
+Comecei construindo uma ferramenta para resolver esse problema na minha própria rotina. A ideia é direta: abrir o aplicativo na academia, conferir os exercícios do dia, registrar séries e cargas e depois consultar o histórico — inclusive quando a conexão não está disponível.
 
-O projeto também é uma forma de colocar em prática meus estudos de desenvolvimento: trabalhar com interface mobile, persistência de dados, gerenciamento de estado, testes e geração de uma versão Android instalável.
+Com o tempo, o projeto também se tornou uma forma prática de desenvolver minhas habilidades com Flutter, Dart, persistência local, gerenciamento de estado e testes. Mas ele não existe apenas como exercício de programação: **a prioridade é ser útil no uso real**. Estou compartilhando o código e as versões Android para que outras pessoas possam experimentar, apontar problemas e sugerir melhorias.
 
-##  Funcionalidades
+## O que você pode fazer
 
-- **Planejamento de treinos:** organizar exercícios por dia da semana e configurar séries, repetições e carga de referência.
-- **Registro durante o treino:** marcar séries concluídas e acompanhar as cargas utilizadas.
-- **Carga por série:** ajustar a carga de cada série sem alterar automaticamente a carga de referência do plano.
-- **Persistência local:** guardar os dados no SQLite, sem exigir uma conta ou sincronização com um servidor.
-- **Retomada do treino:** preservar o estado da sessão em andamento para ajudar a continuar após uma interrupção ou fechamento inesperado do app.
-- **Histórico:** consultar sessões concluídas e acompanhar a evolução do treino.
-- **Peso corporal:** registrar pesagens e acompanhar essa evolução separadamente das cargas dos exercícios.
-- **Mídia local:** selecionar fotos ou GIFs da galeria para associar aos exercícios, mantendo os arquivos no dispositivo.
+- **Organizar a semana:** montar os treinos por dia e configurar exercícios, séries, repetições e carga de referência.
+- **Registrar o treino:** marcar séries concluídas e anotar a carga usada em cada série.
+- **Retomar uma sessão:** preservar o estado do treino em andamento para facilitar a continuidade após uma interrupção.
+- **Consultar o histórico:** rever sessões concluídas, navegar pelas datas de treino e excluir registros lançados por engano.
+- **Acompanhar a evolução:** visualizar gráficos de cargas por exercício e registrar, consultar e excluir o peso corporal separadamente.
+- **Fazer backup:** exportar treinos, pesos e imagens para um arquivo `.zip` e importá-lo em outro aparelho, sem depender de nuvem.
+- **Associar imagens aos exercícios:** selecionar fotos ou GIFs da galeria e mantê-los no armazenamento local do dispositivo.
+- **Escolher a aparência:** usar tema claro, escuro ou o tema do sistema.
+- **Usar sem conta:** as funções principais e os registros são mantidos localmente, sem exigir cadastro ou sincronização com um servidor.
 
-> O projeto está em evolução. Consulte a versão publicada e teste as funções no seu aparelho para confirmar o comportamento da compilação que você instalou.
+> O projeto continua em evolução. A disponibilidade e o comportamento de cada recurso devem ser conferidos na versão instalada.
 
-##  Decisões e problemas que procurei resolver
 
-### 1. Usar o aplicativo sem depender da internet
+Interface real do aplicativo, nas versões clara e escura.
 
-Uma rotina de treino não deveria ficar inacessível só porque a conexão caiu ou a academia tem sinal ruim. Por isso, priorizei uma abordagem **offline-first**, com persistência local em SQLite.
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/hoje.png" alt="Tela Hoje — tema claro" width="100%"><br>
+      <sub><b>Hoje · claro</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/hojeDark.png" alt="Tela Hoje — tema escuro" width="100%"><br>
+      <sub><b>Hoje · escuro</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/planos.png" alt="Planos da semana — tema claro" width="100%"><br>
+      <sub><b>Planos da semana · claro</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/planosDark.png" alt="Planos da semana — tema escuro" width="100%"><br>
+      <sub><b>Planos da semana · escuro</b></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/historico.png" alt="Histórico e evolução — tema claro" width="100%"><br>
+      <sub><b>Histórico e evolução · claro</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/historicoDark.png" alt="Histórico e evolução — tema escuro" width="100%"><br>
+      <sub><b>Histórico e evolução · escuro</b></sub>
+    </td>
+  </tr>
+</table>
 
-### 2. Evitar perder o progresso de uma sessão
+### Vídeo de demonstração
 
-Um treino pode ser interrompido por uma ligação, pelo sistema ou por fechar o aplicativo sem querer. A proposta de persistir a sessão em andamento é permitir que o usuário retome de onde parou, em vez de precisar reconstruir tudo manualmente.
+<p align="center">
+  <a href="docs/screenshots/video.mp4"><b>▶ Assistir ao vídeo de demonstração</b></a>
+</p>
 
-### 3. Registrar o treino feito, não só o planejado
+O GitHub não reproduz o vídeo automaticamente dentro do README. Ao clicar no link, ele abre no próprio GitHub, com o player.
 
-A carga de referência de um exercício é diferente da carga usada em cada série. Separei esses conceitos para permitir ajustes durante o treino e manter um histórico mais fiel do que foi executado.
 
-### 4. Manter as informações organizadas
+## Decisões de projeto
 
-O histórico de sessões e o registro de peso corporal representam coisas diferentes. Mantê-los separados ajuda a consultar cada tipo de evolução sem misturar métricas.
+### Offline-first por escolha
 
-### 5. Reduzir dependências de serviços externos
+Uma rotina de treino não deveria ficar inacessível porque a conexão caiu ou o sinal da academia é ruim. Por isso, os dados principais são armazenados localmente com SQLite. O aplicativo não depende de uma conta ou de um serviço remoto para consultar os registros existentes.
 
-Para este projeto, preferi armazenamento local e mídia selecionada pelo usuário. Isso reduz a dependência de serviços de terceiros para as funções centrais do app e ajuda a manter a experiência disponível offline.
+### Planejado não é o mesmo que realizado
 
-Essas escolhas podem ser úteis para outras pessoas que procuram um registro de treino simples, com dados locais e sem precisar criar uma conta.
+A carga de referência de um exercício e a carga usada em uma série são informações diferentes. O aplicativo procura manter essa distinção para que seja possível ajustar o treino no momento da execução e registrar melhor o que foi feito.
 
-##  Tecnologias
+### Histórico separado por finalidade
 
-- **Flutter e Dart** — construção da aplicação mobile.
-- **SQLite (`sqflite`)** — armazenamento local dos dados.
+O histórico de treinos e o peso corporal representam informações diferentes. Mantê-los separados ajuda a consultar cada tipo de evolução sem misturar métricas.
+
+### Construído para evoluir a partir do uso
+
+O projeto é desenvolvido de forma incremental. Prefiro testar uma mudança, verificar seus efeitos e corrigir problemas identificados no uso em vez de tratar qualquer funcionalidade como pronta só porque o código compila.
+
+## Tecnologias utilizadas
+
+- **Flutter e Dart** — interface e lógica do aplicativo.
+- **SQLite (`sqflite`)** — persistência local.
 - **Provider** — gerenciamento de estado.
-- **`image_picker`** — seleção de mídia da galeria.
-- **`fl_chart`** — visualização de evolução em gráficos.
-- **`table_calendar`** — calendário para navegação pelo histórico.
+- **`shared_preferences`** — armazenamento da preferência de tema.
+- **`image_picker`** — seleção de imagens da galeria.
+- **`file_selector`** — seleção do arquivo de backup.
+- **`archive`** — criação e leitura do arquivo `.zip` do backup.
+- **`share_plus`** — compartilhamento do backup pelo menu do Android.
+- **`path_provider`** — acesso às pastas de armazenamento do aplicativo.
+- **`fl_chart`** — gráficos de evolução.
+- **`table_calendar`** — calendário do histórico.
+- **`flutter_launcher_icons`** — geração do ícone do aplicativo.
 
-##  Instalação no Android
+## Baixar e instalar no Android
 
 1. Abra a página de [Releases](https://github.com/LuanThierry/offline-gym/releases).
-2. Baixe o arquivo **`Offline-Gym.apk`** anexado à versão mais recente.
-3. Abra o arquivo no celular e siga as instruções do Android. O sistema pode solicitar autorização para instalar aplicativos baixados dessa origem.
-4. Se o app já estiver instalado e o Android informar incompatibilidade de assinatura ou de atualização, **não desinstale a versão existente**, principalmente se tiver dados que deseja preservar.
+2. Baixe o `Offline-Gym.apk` da versão mais recente. Esse arquivo é destinado a dispositivos Android ARM64, comuns em celulares atuais.
+3. Abra o APK no aparelho e siga as instruções do Android. Talvez seja necessário autorizar a instalação de aplicativos obtidos dessa origem.
+4. Abra o Offline Gym e confira se tudo funciona no seu dispositivo.
 
-**Importante sobre os dados:** os registros ficam armazenados localmente no dispositivo. Não há sincronização em nuvem implementada neste projeto; desinstalar o aplicativo ou limpar seus dados pode apagar os registros locais. Faça testes com cuidado e mantenha uma cópia das informações importantes.
+Também podem ser disponibilizadas variantes para outras arquiteturas na página de Releases. Escolha o arquivo compatível com seu aparelho.
 
-##  Executar o projeto localmente
+### Sobre seus dados
 
-Você precisará do Flutter SDK instalado e de um ambiente configurado para Android.
+Os registros são armazenados no próprio dispositivo, e o aplicativo não usa sincronização em nuvem.
+
+Para trocar de aparelho, use **Configurações → Exportar backup** no aparelho antigo e envie o arquivo para o novo (Drive, WhatsApp, e-mail ou outro meio). No aparelho novo, use **Configurações → Importar backup**. A importação **substitui** os dados existentes naquele aparelho, então exporte um backup antes se houver algo a guardar.
+
+Desinstalar o aplicativo ou limpar os dados dele pode remover os registros locais. Se os dados forem importantes, faça um backup antes dessas operações.
+
+Se uma atualização não puder ser instalada por incompatibilidade de assinatura ou de versão, não desinstale a cópia atual sem antes exportar um backup.
+
+## Executar o projeto localmente
+
+Você precisa do Flutter SDK e de um ambiente configurado para executar aplicativos Android.
 
 ```bash
 git clone https://github.com/LuanThierry/offline-gym.git
@@ -91,55 +151,63 @@ flutter pub get
 flutter run
 ```
 
-Para validar o projeto:
+Para verificar o código e executar os testes:
 
 ```bash
 flutter analyze
 flutter test
 ```
 
-Para gerar um APK Release separado por arquitetura:
+Para gerar APKs Release separados por arquitetura:
 
 ```bash
 flutter build apk --release --split-per-abi
 ```
 
-O APK ARM de 64 bits costuma ser o arquivo `app-arm64-v8a-release.apk`, dentro de `build/app/outputs/flutter-apk/`.
+Os arquivos são gerados em `build/app/outputs/flutter-apk/`. O arquivo `app-arm64-v8a-release.apk` é a variante ARM64.
 
-##  Validação
+## Estado do projeto
 
-Na versão inicial publicada, executei as verificações abaixo no ambiente de desenvolvimento:
+O Offline Gym é um projeto pessoal em desenvolvimento e está sendo compartilhado para uso e feedback. A análise estática, os testes automatizados e a compilação fazem parte do processo de validação, mas não garantem ausência de problemas em todos os aparelhos e versões do Android.
 
-- `flutter analyze` — concluído sem problemas reportados.
-- `flutter test` — todos os testes existentes passaram.
-- `flutter build apk --release --split-per-abi` — compilação Release gerada.
+Se encontrar um comportamento inesperado, informe a versão do aplicativo e do Android e, se possível, os passos para reproduzir o problema.
 
-Essas verificações não substituem testes em diferentes aparelhos e versões do Android. Feedbacks sobre erros e melhorias são bem-vindos.
+## Feedback e contribuições
 
-##  Usei inteligência artificial
+Encontrou um erro, tem uma sugestão ou quer propor uma melhoria?
 
-Usei IA como ferramenta de apoio durante o planejamento, a implementação, a refatoração e a investigação de problemas. Também executei as ferramentas de análise e testes para verificar o projeto, em vez de considerar uma sugestão de código correta automaticamente.
+- [Abrir uma Issue](https://github.com/LuanThierry/offline-gym/issues) para relatar um problema ou sugerir uma funcionalidade.
+- Ao relatar um erro, inclua o que você fez, o que esperava que acontecesse e o que aconteceu de fato. Capturas de tela também ajudam.
 
-Para mim, a parte importante desse processo é aprender a definir requisitos, avaliar as mudanças, entender os erros e validar o resultado. A IA fez parte do fluxo de trabalho, mas não substituiu a necessidade de revisar e testar a aplicação.
+### Se você apoia a iniciativa, deixe uma estrela ⭐
 
-##  Próximos passos
+O Offline Gym começou como uma ferramenta para resolver uma necessidade da minha própria rotina. Se você acredita na ideia de criar software útil, simples e que respeita o uso offline, uma estrela no GitHub é uma forma pequena, mas importante, de apoiar o projeto e ajudar outras pessoas a encontrá-lo.
 
+[⭐ Deixar uma estrela no repositório](https://github.com/LuanThierry/offline-gym/stargazers)
+
+## Uso de inteligência artificial
+
+Usei ferramentas de inteligência artificial como apoio em partes do planejamento, implementação, refatoração e investigação de erros. As sugestões foram tratadas como auxílio, não como garantia de correção: o código também foi analisado, testado e executado durante o desenvolvimento.
+
+Para mim, esse processo faz parte do aprendizado de desenvolvimento de software: entender o problema, avaliar propostas, investigar erros e validar o resultado.
+
+## Próximos passos
+
+- Registrar repetições por série e marcar as séries feitas até a falha.
+- Permitir editar sessões já salvas no histórico, corrigindo carga e repetições.
+- Manter a evolução de cada exercício mesmo se o nome dele for alterado.
 - Continuar testando a preservação dos dados e a retomada de sessões.
-- Melhorar a documentação conforme novas versões forem publicadas.
-- Corrigir problemas identificados no uso real e evoluir a experiência de treino.
+- Adicionar capturas de tela reais e atualizar a documentação conforme novas versões forem publicadas.
+- Priorizar correções e melhorias a partir do uso e do feedback recebido.
 
-## Feedback
+## Licença
 
-Encontrou um problema ou tem uma ideia? Abra uma [Issue no GitHub](https://github.com/LuanThierry/offline-gym/issues) descrevendo o que aconteceu, os passos para reproduzir e, se possível, a versão do Android e do aplicativo.
-
-##  Licença
-
-A licença ainda será definida. Até lá, o código pode ser consultado publicamente, mas a publicação do repositório, por si só, não concede automaticamente permissão para redistribuir ou reutilizar o projeto.
+Uma licença de software ainda não foi definida. Até que isso aconteça, o repositório pode ser consultado publicamente, mas sua publicação não concede, por si só, permissão para redistribuir, modificar ou reutilizar o código. Entre em contato antes de presumir direitos de reutilização.
 
 ---
 
 <div align="center">
 
-Feito como projeto pessoal de aprendizado e desenvolvimento. 
+Feito a partir de uma necessidade real, desenvolvido incrementalmente e compartilhado para evoluir com feedback.
 
 </div>
