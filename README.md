@@ -9,7 +9,7 @@ O **Offline Gym** é um aplicativo Android para planejar treinos, registrar sér
 
 [📲 Baixar para Android](https://release-assets.githubusercontent.com/github-production-release-asset/1412323507/cacf5699-5bbd-4efb-a2a5-d679164e5010?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-10-15T16%3A19%3A20Z&rscd=attachment%3B+filename%3DOffline-Gym-1.0.3.apk&rsct=application%2Fvnd.android.package-archive&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-10-15T15%3A19%3A07Z&ske=2026-10-15T16%3A19%3A20Z&sks=b&skv=2018-11-09&sig=3e3w5EGda6sOBXFF%2BBIoDsFZdwYNI%2Fd4oqg7chZgthw%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5MjA3OTM0OCwibmJmIjoxNzkyMDc3NTQ4LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.ql8a2NFWUIuGvC4s68KlXm1-0xvlYfjtvJWjFpZ2D0M&response-content-disposition=attachment%3B%20filename%3DOffline-Gym-1.0.3.apk&response-content-type=application%2Fvnd.android.package-archive) · [Ver versões](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym)
 
-[⭐ Apoiar a iniciativa com uma estrela](https://github.com/LuanThierry/offline-gym/stargazers)
+[⭐ Apoiar a iniciativa com uma estrela](https://github.com/LuanThierry/offline-gym)
 
 ![Flutter](https://img.shields.io/badge/Flutter-app-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-language-0175C2?logo=dart&logoColor=white)
@@ -178,7 +178,7 @@ Encontrou um erro, tem uma sugestão ou quer propor uma melhoria?
 
 O Offline Gym começou como uma ferramenta para resolver uma necessidade da minha própria rotina. Se você acredita na ideia de criar software útil, simples e que respeita o uso offline, uma estrela no GitHub é uma forma pequena, mas importante, de apoiar o projeto e ajudar outras pessoas a encontrá-lo.
 
-[⭐ Deixar uma estrela no repositório](https://github.com/LuanThierry/offline-gym/stargazers)
+[⭐ Deixar uma estrela no repositório](https://github.com/LuanThierry/offline-gym)
 
 ## Uso de inteligência artificial
 
