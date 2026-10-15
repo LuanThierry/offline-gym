@@ -85,9 +85,6 @@ Interface real do aplicativo, nas versões clara e escura.
   <img src="docs/screenshots/video.gif" alt="Demonstração do Offline Gym" width="320">
 </p>
 
-O GitHub não reproduz o vídeo automaticamente dentro do README. Ao clicar no link, ele abre no próprio GitHub, com o player.
-
-
 ## Decisões de projeto
 
 ### Offline-first por escolha
