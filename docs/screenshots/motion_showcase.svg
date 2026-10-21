@@ -1,0 +1,303 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 580" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D0B18" />
+      <stop offset="50%" stop-color="#151129" />
+      <stop offset="100%" stop-color="#1B1438" />
+    </linearGradient>
+
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6C5CE7" />
+      <stop offset="100%" stop-color="#A29BFE" />
+    </linearGradient>
+
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00E676" />
+      <stop offset="100%" stop-color="#1DE9B6" />
+    </linearGradient>
+
+    <linearGradient id="fireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9F43" />
+      <stop offset="100%" stop-color="#FF5252" />
+    </linearGradient>
+
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#221D3A" />
+      <stop offset="100%" stop-color="#18142B" />
+    </linearGradient>
+
+    <radialGradient id="glowPurple" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6C5CE7" stop-opacity="0.45" />
+      <stop offset="100%" stop-color="#6C5CE7" stop-opacity="0" />
+    </radialGradient>
+
+    <radialGradient id="glowGreen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00E676" stop-opacity="0.30" />
+      <stop offset="100%" stop-color="#00E676" stop-opacity="0" />
+    </radialGradient>
+
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000000" flood-opacity="0.55" />
+    </filter>
+
+    <style>
+      .font-sans { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif; }
+      .float-phone { animation: floatPhone 5s ease-in-out infinite; }
+      .float-badge-1 { animation: floatBadge 4s ease-in-out infinite; }
+      .float-badge-2 { animation: floatBadge 4.5s ease-in-out infinite 1s; }
+      .pulse-pr { animation: pulsePR 2.2s ease-in-out infinite; transform-origin: 915px 258px; }
+      .pulse-fire { animation: pulseFire 1.8s ease-in-out infinite; transform-origin: 790px 115px; }
+      .timer-bar { animation: timerProgress 6s ease-in-out infinite; }
+      .check-3 { animation: checkPulse 3s ease-in-out infinite; }
+      .heat-cell-1 { animation: heatGlow 3s ease-in-out infinite 0.2s; }
+      .heat-cell-2 { animation: heatGlow 3s ease-in-out infinite 0.8s; }
+      .heat-cell-3 { animation: heatGlow 3s ease-in-out infinite 1.4s; }
+      .heat-cell-4 { animation: heatGlow 3s ease-in-out infinite 2.0s; }
+
+      @keyframes floatPhone {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+      @keyframes floatBadge {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-6px); }
+      }
+      @keyframes pulsePR {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+      }
+      @keyframes pulseFire {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.78; }
+      }
+      @keyframes timerProgress {
+        0% { width: 40px; }
+        50% { width: 255px; }
+        100% { width: 40px; }
+      }
+      @keyframes checkPulse {
+        0%, 100% { fill: #00E676; }
+        50% { fill: #6C5CE7; }
+      }
+      @keyframes heatGlow {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 1; }
+      }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="580" rx="28" fill="url(#bgGrad)" stroke="#332B54" stroke-width="2" />
+
+  <!-- Ambient Glows -->
+  <circle cx="920" cy="280" r="280" fill="url(#glowPurple)" />
+  <circle cx="280" cy="440" r="220" fill="url(#glowGreen)" />
+
+  <!-- Subtle Grid Lines -->
+  <g stroke="#FFFFFF" stroke-opacity="0.03" stroke-width="1">
+    <line x1="0" y1="120" x2="1200" y2="120" />
+    <line x1="0" y1="240" x2="1200" y2="240" />
+    <line x1="0" y1="360" x2="1200" y2="360" />
+    <line x1="0" y1="480" x2="1200" y2="480" />
+    <line x1="240" y1="0" x2="240" y2="580" />
+    <line x1="480" y1="0" x2="480" y2="580" />
+    <line x1="720" y1="0" x2="720" y2="580" />
+    <line x1="960" y1="0" x2="960" y2="580" />
+  </g>
+
+  <!-- ================= LEFT COLUMN: PITCH & LIVE FEATURES ================= -->
+  <g class="font-sans">
+    <!-- Top Pill -->
+    <rect x="56" y="46" width="335" height="34" rx="17" fill="#231D3E" stroke="#6C5CE7" stroke-width="1.5" />
+    <circle cx="76" cy="63" r="5" fill="#00E676" />
+    <text x="90" y="68" fill="#E2DEFF" font-size="13" font-weight="700" letter-spacing="0.8">100% OFFLINE · OPEN SOURCE · v1.1.1</text>
+
+    <!-- Main Headline -->
+    <text x="56" y="132" fill="#FFFFFF" font-size="46" font-weight="900">Offline Gym</text>
+    <text x="56" y="172" fill="#A29BFE" font-size="22" font-weight="700">Treinos, +1.780 Exercícios, Hábitos &amp; Evolução</text>
+    <text x="56" y="204" fill="#B2ADC9" font-size="15" font-weight="500">Zero internet. Zero anúncios. Zero mensalidade. Tudo salvo no seu aparelho.</text>
+
+    <!-- Feature Cards Grid (2x2) -->
+    <!-- Card 1 -->
+    <g class="float-badge-1">
+      <rect x="56" y="232" width="285" height="78" rx="16" fill="url(#cardGrad)" stroke="#3D3466" stroke-width="1.5" />
+      <rect x="72" y="248" width="44" height="44" rx="12" fill="#6C5CE7" fill-opacity="0.2" />
+      <text x="85" y="278" font-size="22">🏋️</text>
+      <text x="128" y="267" fill="#FFFFFF" font-size="15" font-weight="800">+1.780 Exercícios Offline</text>
+      <text x="128" y="288" fill="#B2ADC9" font-size="12.5" font-weight="500">9 modalidades + 12 fichas prontas</text>
+    </g>
+
+    <!-- Card 2 -->
+    <g class="float-badge-2">
+      <rect x="357" y="232" width="285" height="78" rx="16" fill="url(#cardGrad)" stroke="#3D3466" stroke-width="1.5" />
+      <rect x="373" y="248" width="44" height="44" rx="12" fill="#FF9F43" fill-opacity="0.2" />
+      <text x="386" y="278" font-size="22">🏆</text>
+      <text x="429" y="267" fill="#FFFFFF" font-size="15" font-weight="800">Detector de PR &amp; Anilhas</text>
+      <text x="429" y="288" fill="#B2ADC9" font-size="12.5" font-weight="500">Séries A / D / F 🔥 e cálculo 20kg</text>
+    </g>
+
+    <!-- Card 3 -->
+    <g class="float-badge-2">
+      <rect x="56" y="324" width="285" height="78" rx="16" fill="url(#cardGrad)" stroke="#3D3466" stroke-width="1.5" />
+      <rect x="72" y="340" width="44" height="44" rx="12" fill="#00E676" fill-opacity="0.18" />
+      <text x="85" y="370" font-size="22">🛡️</text>
+      <text x="128" y="359" fill="#FFFFFF" font-size="15" font-weight="800">Ofensiva, Escudo &amp; Hábitos</text>
+      <text x="128" y="380" fill="#B2ADC9" font-size="12.5" font-weight="500">10 classes gamificadas + To-Do</text>
+    </g>
+
+    <!-- Card 4 -->
+    <g class="float-badge-1">
+      <rect x="357" y="324" width="285" height="78" rx="16" fill="url(#cardGrad)" stroke="#3D3466" stroke-width="1.5" />
+      <rect x="373" y="340" width="44" height="44" rx="12" fill="#00CEC9" fill-opacity="0.2" />
+      <text x="386" y="370" font-size="22">🔐</text>
+      <text x="429" y="359" fill="#FFFFFF" font-size="15" font-weight="800">Backup Local &amp; Argon2id</text>
+      <text x="429" y="380" fill="#B2ADC9" font-size="12.5" font-weight="500">Cópia no celular + AES-256-GCM</text>
+    </g>
+
+    <!-- Animated Consistency Heatmap Preview Card -->
+    <rect x="56" y="420" width="586" height="114" rx="18" fill="#18142C" stroke="#342C56" stroke-width="1.5" />
+    <text x="78" y="448" fill="#FFFFFF" font-size="14" font-weight="800">🔥 Mapa de Consistência (Últimas 12 Semanas · Treinos + Hábitos)</text>
+    <text x="515" y="448" fill="#00E676" font-size="12.5" font-weight="700">100% Local SQLite</text>
+
+    <!-- Heatmap Grid Rows -->
+    <g transform="translate(78, 462)">
+      <!-- Col 1..18 -->
+      <rect x="0" y="0" width="16" height="16" rx="4" fill="#2A2444" />
+      <rect x="0" y="20" width="16" height="16" rx="4" fill="#6C5CE7" opacity="0.6" />
+      <rect x="0" y="40" width="16" height="16" rx="4" fill="#00E676" opacity="0.8" />
+
+      <rect x="22" y="0" width="16" height="16" rx="4" fill="#6C5CE7" opacity="0.7" />
+      <rect x="22" y="20" width="16" height="16" rx="4" fill="#00E676" />
+      <rect x="22" y="40" width="16" height="16" rx="4" fill="#2A2444" />
+
+      <rect x="44" y="0" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-1" />
+      <rect x="44" y="20" width="16" height="16" rx="4" fill="#00E676" opacity="0.75" />
+      <rect x="44" y="40" width="16" height="16" rx="4" fill="#6C5CE7" />
+
+      <rect x="66" y="0" width="16" height="16" rx="4" fill="#2A2444" />
+      <rect x="66" y="20" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-2" />
+      <rect x="66" y="40" width="16" height="16" rx="4" fill="#00E676" />
+
+      <rect x="88" y="0" width="16" height="16" rx="4" fill="#6C5CE7" />
+      <rect x="88" y="20" width="16" height="16" rx="4" fill="#00E676" opacity="0.85" />
+      <rect x="88" y="40" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-3" />
+
+      <rect x="110" y="0" width="16" height="16" rx="4" fill="#00E676" />
+      <rect x="110" y="20" width="16" height="16" rx="4" fill="#2A2444" />
+      <rect x="110" y="40" width="16" height="16" rx="4" fill="#6C5CE7" opacity="0.8" />
+
+      <rect x="132" y="0" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-4" />
+      <rect x="132" y="20" width="16" height="16" rx="4" fill="#00E676" />
+      <rect x="132" y="40" width="16" height="16" rx="4" fill="#00E676" opacity="0.7" />
+
+      <rect x="154" y="0" width="16" height="16" rx="4" fill="#6C5CE7" opacity="0.7" />
+      <rect x="154" y="20" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-1" />
+      <rect x="154" y="40" width="16" height="16" rx="4" fill="#00E676" />
+
+      <rect x="176" y="0" width="16" height="16" rx="4" fill="#00E676" />
+      <rect x="176" y="20" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-2" />
+      <rect x="176" y="40" width="16" height="16" rx="4" fill="#6C5CE7" />
+
+      <rect x="198" y="0" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-3" />
+      <rect x="198" y="20" width="16" height="16" rx="4" fill="#00E676" />
+      <rect x="198" y="40" width="16" height="16" rx="4" fill="#00E676" class="heat-cell-4" />
+
+      <!-- Modalities Pills on the right of Heatmap -->
+      <rect x="240" y="2" width="96" height="24" rx="8" fill="#262042" stroke="#6C5CE7" stroke-width="1" />
+      <text x="253" y="18" fill="#D6D0FF" font-size="11.5" font-weight="700">Academia</text>
+
+      <rect x="344" y="2" width="96" height="24" rx="8" fill="#262042" stroke="#6C5CE7" stroke-width="1" />
+      <text x="358" y="18" fill="#D6D0FF" font-size="11.5" font-weight="700">Calistenia</text>
+
+      <rect x="448" y="2" width="92" height="24" rx="8" fill="#262042" stroke="#6C5CE7" stroke-width="1" />
+      <text x="462" y="18" fill="#D6D0FF" font-size="11.5" font-weight="700">CrossFit</text>
+
+      <rect x="240" y="32" width="110" height="24" rx="8" fill="#262042" stroke="#00E676" stroke-width="1" />
+      <text x="252" y="48" fill="#A8FFDB" font-size="11.5" font-weight="700">Boxe &amp; Luta</text>
+
+      <rect x="358" y="32" width="84" height="24" rx="8" fill="#262042" stroke="#00E676" stroke-width="1" />
+      <text x="373" y="48" fill="#A8FFDB" font-size="11.5" font-weight="700">Pilates</text>
+
+      <rect x="450" y="32" width="90" height="24" rx="8" fill="#262042" stroke="#00E676" stroke-width="1" />
+      <text x="463" y="48" fill="#A8FFDB" font-size="11.5" font-weight="700">Em Casa</text>
+    </g>
+  </g>
+
+  <!-- ================= RIGHT COLUMN: ANIMATED PHONE MOCKUP ================= -->
+  <g class="float-phone font-sans" filter="url(#shadow)">
+    <!-- Phone Frame -->
+    <rect x="700" y="32" width="430" height="516" rx="38" fill="#131022" stroke="#4B407C" stroke-width="3" />
+    <!-- Screen Inner -->
+    <rect x="712" y="44" width="406" height="492" rx="30" fill="#181528" />
+
+    <!-- Top Status / Notch -->
+    <rect x="865" y="54" width="100" height="18" rx="9" fill="#0D0B18" />
+
+    <!-- App Header: Streak + Shield -->
+    <g class="pulse-fire">
+      <rect x="732" y="86" width="235" height="48" rx="14" fill="#251F3D" stroke="#FF9F43" stroke-width="1.5" />
+      <text x="748" y="116" font-size="20">🔥</text>
+      <text x="776" y="108" fill="#FFFFFF" font-size="14" font-weight="800">15 Dias de Ofensiva</text>
+      <text x="776" y="124" fill="#FF9F43" font-size="11.5" font-weight="700">Classe Guerreiro · 🛡️ 2 Escudos</text>
+    </g>
+
+    <!-- Active Session Timer Badge -->
+    <rect x="977" y="86" width="121" height="48" rx="14" fill="url(#primaryGrad)" />
+    <text x="993" y="107" fill="#FFFFFF" font-size="11" font-weight="700">EM TREINO</text>
+    <text x="993" y="125" fill="#FFFFFF" font-size="15" font-weight="900">⏱ 38:42</text>
+
+    <!-- Segmented Tab (Treino do Dia / Hábitos) -->
+    <rect x="732" y="146" width="366" height="36" rx="11" fill="#221D38" />
+    <rect x="736" y="150" width="180" height="28" rx="8" fill="#6C5CE7" />
+    <text x="780" y="169" fill="#FFFFFF" font-size="12.5" font-weight="800">Treino A · Push</text>
+    <text x="955" y="169" fill="#A9A3C4" font-size="12.5" font-weight="700">Hábitos (4/4 ✅)</text>
+
+    <!-- Exercise Card -->
+    <rect x="732" y="194" width="366" height="260" rx="20" fill="#211C36" stroke="#3B3261" stroke-width="1.5" />
+
+    <!-- Exercise Title & PR Badge -->
+    <text x="752" y="224" fill="#FFFFFF" font-size="17" font-weight="800">Supino Reto com Barra</text>
+    <text x="752" y="243" fill="#A59EC4" font-size="12" font-weight="600">4 séries · Descanso 60s · 🏆 PR: 100 kg</text>
+
+    <!-- Animated NOVO PR Badge -->
+    <g class="pulse-pr">
+      <rect x="852" y="252" width="128" height="25" rx="8" fill="url(#fireGrad)" />
+      <text x="864" y="269" fill="#FFFFFF" font-size="11.5" font-weight="900">🏆 NOVO PR · 100 kg</text>
+    </g>
+
+    <!-- Plate Calculator Pill -->
+    <rect x="752" y="252" width="92" height="25" rx="8" fill="#2E274D" stroke="#6C5CE7" stroke-width="1" />
+    <text x="762" y="269" fill="#D5CFFF" font-size="11" font-weight="700">⚖️ 40kg/lado</text>
+
+    <!-- Series Row 1 (Warmup) -->
+    <rect x="750" y="288" width="330" height="38" rx="10" fill="#19152B" />
+    <rect x="760" y="296" width="24" height="22" rx="6" fill="#00CEC9" fill-opacity="0.2" />
+    <text x="767" y="312" fill="#00CEC9" font-size="12" font-weight="900">A</text>
+    <text x="794" y="312" fill="#E0DCF5" font-size="13" font-weight="700">1ª Série · 60 kg × 12 reps</text>
+    <circle cx="1056" cy="307" r="11" fill="#00E676" />
+    <text x="1050" y="312" fill="#0D0B18" font-size="13" font-weight="900">✓</text>
+
+    <!-- Series Row 2 (Normal) -->
+    <rect x="750" y="334" width="330" height="38" rx="10" fill="#19152B" />
+    <rect x="760" y="342" width="24" height="22" rx="6" fill="#6C5CE7" fill-opacity="0.25" />
+    <text x="767" y="358" fill="#A29BFE" font-size="12" font-weight="900">N</text>
+    <text x="794" y="358" fill="#E0DCF5" font-size="13" font-weight="700">2ª Série · 90 kg × 10 reps</text>
+    <circle cx="1056" cy="353" r="11" fill="#00E676" />
+    <text x="1050" y="358" fill="#0D0B18" font-size="13" font-weight="900">✓</text>
+
+    <!-- Series Row 3 (Failure + PR) -->
+    <rect x="750" y="380" width="330" height="38" rx="10" fill="#2A2248" stroke="#6C5CE7" stroke-width="1.2" />
+    <rect x="760" y="388" width="24" height="22" rx="6" fill="#FF5252" fill-opacity="0.25" />
+    <text x="768" y="404" fill="#FF6B6B" font-size="12" font-weight="900">F</text>
+    <text x="794" y="404" fill="#FFFFFF" font-size="13" font-weight="800">3ª Série · 100 kg × 8 reps 🔥</text>
+    <circle cx="1056" cy="399" r="11" class="check-3" />
+    <text x="1050" y="404" fill="#0D0B18" font-size="13" font-weight="900">✓</text>
+
+    <!-- Animated Rest Timer Bar at bottom of Phone -->
+    <rect x="732" y="466" width="366" height="52" rx="16" fill="#251F3D" stroke="#6C5CE7" stroke-width="1.5" />
+    <text x="750" y="489" fill="#FFFFFF" font-size="12.5" font-weight="800">⏱️ Descanso Ativo · 00:45 restantes</text>
+    <text x="1032" y="489" fill="#00E676" font-size="12" font-weight="800">+15s</text>
+    <rect x="750" y="498" width="330" height="8" rx="4" fill="#151126" />
+    <rect x="750" y="498" width="220" height="8" rx="4" fill="url(#emeraldGrad)" class="timer-bar" />
+  </g>
+</svg>

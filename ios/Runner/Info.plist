@@ -3,7 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>O Offline Gym permite selecionar fotos ou GIFs da galeria para associá-los aos exercícios.</string>
+    <string>O Offline Gym permite selecionar fotos ou GIFs da galeria para associá-los aos exercícios, perfil, diário e evolução mensal.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>O Offline Gym permite salvar fotos de evolução e registros do diário no aparelho.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>O Offline Gym utiliza a câmera apenas quando você escolhe tirar uma foto de perfil, do diário de treino ou da evolução mensal.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

@@ -71,7 +71,10 @@ android/app/build/
 # Outros arquivos de assinatura e pacotes de publicação
 **/*.jks
 **/*.keystore
+**/*.p12
+**/*.pem
 *.aab
 
 # Backups exportados pelo app, se você salvar algum dentro da pasta do projeto
 offline_gym_backup_*.zip
+*.ogb

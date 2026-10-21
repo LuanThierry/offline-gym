@@ -1,14 +1,16 @@
 name: offline_gym
-description: Offline-first workout planner built with Flutter, Provider and SQLite.
+description: Aplicativo offline para planejar treinos, hábitos, tarefas e acompanhar a evolução.
 publish_to: none
-version: 1.1.0+5
+version: 1.4.1+8
 
 environment:
-  sdk: '>=3.12.0 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
 
 dependencies:
   share_plus: ^11.0.0
   archive: ^4.0.0
+  cryptography: ^2.9.0
   flutter:
     sdk: flutter
 
@@ -25,6 +27,12 @@ dependencies:
   image_picker: ^1.2.4
   shared_preferences: ^2.5.6
   file_selector: ^1.1.0
+  audioplayers: ^6.8.1
+  flutter_local_notifications: ^22.3.2
+  flutter_timezone: ^5.1.1
+  timezone: ^0.11.2
+  url_launcher: ^6.3.3
+  pdf: ^3.13.1
 
 dev_dependencies:
   flutter_test:
@@ -40,6 +48,8 @@ flutter:
 
 flutter_launcher_icons:
   android: true
+  ios: true
+  remove_alpha_ios: true
   image_path: "assets/icon/icon.png"
   adaptive_icon_background: '#6C5CE7'
   adaptive_icon_foreground: "assets/icon/icon.png"
