@@ -426,6 +426,8 @@ class SerieDoTreino {
     this.repeticoes = 10,
     this.tipo = 'normal',
     this.rpe,
+    this.idHistoricoTreino,
+    this.dataISO,
   });
 
   final String nomeExercicio;
@@ -434,6 +436,8 @@ class SerieDoTreino {
   final int repeticoes;
   final String tipo;
   final double? rpe;
+  final int? idHistoricoTreino;
+  final String? dataISO;
 
   factory SerieDoTreino.deMapa(Map<String, Object?> map) {
     return SerieDoTreino(
@@ -443,6 +447,9 @@ class SerieDoTreino {
       repeticoes: (map['repeticoes'] as num?)?.toInt() ?? 10,
       tipo: (map['tipo'] as String?) ?? 'normal',
       rpe: (map['rpe'] as num?)?.toDouble(),
+      idHistoricoTreino: (map['idHistoricoTreino'] as num?)?.toInt() ??
+          (map['workoutId'] as num?)?.toInt(),
+      dataISO: map['dataISO'] as String?,
     );
   }
 

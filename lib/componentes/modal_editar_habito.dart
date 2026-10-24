@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../modelos/habito.dart';
+import 'seletor_de_cor.dart';
 
 /// Modal para criar ou editar um hábito diário com meta intuitiva,
 /// unidades selecionáveis, atalhos de frequência e catálogo rico de ícones.
@@ -439,9 +440,62 @@ class _EstadoDoModalEditarHabito extends State<ModalEditarHabito> {
             height: 44,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: PaletaCoresHabito.cores.length,
+              itemCount: PaletaCoresHabito.cores.length + 1,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, idx) {
+                if (idx == PaletaCoresHabito.cores.length) {
+                  final isCustom = !PaletaCoresHabito.cores
+                      .any((c) => c.toARGB32() == _corValor);
+                  final corAtual = Color(_corValor);
+                  return GestureDetector(
+                    onTap: () async {
+                      final cor = await DialogoSeletorDeCor.abrir(
+                        context,
+                        corInicial: Color(_corValor),
+                        titulo: 'Cor Personalizada do Hábito',
+                      );
+                      if (cor != null) {
+                        setState(() => _corValor = cor.toARGB32());
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: isCustom
+                            ? corAtual
+                            : (Theme.of(context).brightness == Brightness.dark
+                                ? const Color(0xFF252532)
+                                : const Color(0xFFE9ECEF)),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isCustom
+                              ? Colors.white
+                              : Theme.of(context).dividerColor,
+                          width: isCustom ? 3 : 1.5,
+                        ),
+                        boxShadow: isCustom
+                            ? [
+                                BoxShadow(
+                                  color: corAtual.withValues(alpha: 0.65),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Icon(
+                        isCustom ? Icons.check : Icons.colorize_rounded,
+                        color: isCustom
+                            ? Colors.white
+                            : Theme.of(context).colorScheme.primary,
+                        size: 18,
+                      ),
+                    ),
+                  );
+                }
+
                 final cor = PaletaCoresHabito.cores[idx];
                 final isSelected = _corValor == cor.toARGB32();
                 return GestureDetector(
@@ -460,9 +514,9 @@ class _EstadoDoModalEditarHabito extends State<ModalEditarHabito> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: cor.withValues(alpha: 0.6),
-                                blurRadius: 8,
-                                spreadRadius: 1,
+                                color: cor.withValues(alpha: 0.7),
+                                blurRadius: 10,
+                                spreadRadius: 2,
                               ),
                             ]
                           : null,

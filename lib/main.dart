@@ -335,7 +335,8 @@ class _EstadoDoAplicativoOfflineGym extends State<AplicativoOfflineGym>
             backgroundColor: primary,
             foregroundColor: Colors.white,
             minimumSize: const Size(0, 48),
-            elevation: 0,
+            elevation: 2,
+            shadowColor: primary.withValues(alpha: 0.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -345,6 +346,11 @@ class _EstadoDoAplicativoOfflineGym extends State<AplicativoOfflineGym>
         floatingActionButtonTheme: FloatingActionButtonThemeData(
           backgroundColor: primary,
           foregroundColor: Colors.white,
+          elevation: 4,
+          focusElevation: 6,
+          hoverElevation: 6,
+          highlightElevation: 8,
+          splashColor: Colors.white24,
         ),
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: darkBackground,

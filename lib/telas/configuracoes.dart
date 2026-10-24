@@ -10,6 +10,8 @@ import '../servicos/som_do_alarme.dart';
 import '../servicos/backup.dart';
 import '../servicos/exportacao_relatorio.dart';
 import 'insights.dart';
+import 'seletor_de_sons.dart';
+import '../componentes/seletor_de_cor.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 bool _licencaDoCriadorRegistrada = false;
@@ -79,10 +81,25 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
   Future<void> _abrirLinkNoNavegador(String url) async {
     try {
       final uri = Uri.parse(url);
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
+      var launched = false;
+      try {
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (_) {
+        launched = false;
+      }
+      if (!launched) {
+        try {
+          launched = await launchUrl(
+            uri,
+            mode: LaunchMode.platformDefault,
+          );
+        } catch (_) {
+          launched = false;
+        }
+      }
       if (!launched) {
         await _copiarTextoParaAreaDeTransferencia(
           url,
@@ -739,31 +756,95 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ProvedorDeTema.estilosDisponiveis.map((estilo) {
-              final isSelected = provedorDoTema.estiloId == estilo.id;
-              return ChoiceChip(
-                avatar: CircleAvatar(
-                  backgroundColor: estilo.primaria,
-                  radius: 7,
-                ),
-                label: Text(estilo.nome),
-                selected: isSelected,
-                selectedColor: estilo.primaria.withValues(alpha: 0.18),
-                side: BorderSide(
-                  color: isSelected ? estilo.primaria : theme.dividerColor,
-                  width: isSelected ? 1.6 : 1,
-                ),
-                onSelected: (selected) {
-                  if (selected) {
-                    provedorDoTema.definirEstiloDoTema(estilo.id);
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              ...ProvedorDeTema.estilosDisponiveis.map((estilo) {
+                final isSelected = provedorDoTema.estiloId == estilo.id &&
+                    !provedorDoTema.isCustomizado;
+                return GestureDetector(
+                  onTap: () => provedorDoTema.definirEstiloDoTema(estilo.id),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: estilo.primaria,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected ? Colors.white : Colors.transparent,
+                        width: 3,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: estilo.primaria.withValues(alpha: 0.8),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white, size: 22)
+                        : null,
+                  ),
+                );
+              }),
+              // Botão Color Picker para personalização livre
+              GestureDetector(
+                onTap: () async {
+                  final cor = await DialogoSeletorDeCor.abrir(
+                    context,
+                    corInicial: provedorDoTema.estiloAtual.primaria,
+                    titulo: 'Cor Neon do Aplicativo',
+                  );
+                  if (cor != null) {
+                    await provedorDoTema.definirCorCustomizada(cor);
                   }
                 },
-              );
-            }).toList(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: provedorDoTema.isCustomizado
+                        ? provedorDoTema.estiloAtual.primaria
+                        : (theme.brightness == Brightness.dark
+                            ? const Color(0xFF232332)
+                            : const Color(0xFFE2E8F0)),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: provedorDoTema.isCustomizado
+                          ? Colors.white
+                          : theme.dividerColor,
+                      width: provedorDoTema.isCustomizado ? 3 : 1.5,
+                    ),
+                    boxShadow: provedorDoTema.isCustomizado
+                        ? [
+                            BoxShadow(
+                              color: provedorDoTema.estiloAtual.primaria
+                                  .withValues(alpha: 0.85),
+                              blurRadius: 12,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    provedorDoTema.isCustomizado
+                        ? Icons.check
+                        : Icons.colorize_rounded,
+                    color: provedorDoTema.isCustomizado
+                        ? Colors.white
+                        : theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 14),
@@ -823,161 +904,74 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
               child: Column(
                 children: [
-                  RadioGroup<String>(
-                    groupValue: _alarmSound.currentSoundId,
-                    onChanged: (value) async {
-                      if (value != null) {
-                        if (value == 'custom' &&
-                            _alarmSound.customAudioPath == null) {
-                          final picked =
-                              await _alarmSound.selecionarAudioPersonalizado();
-                          if (picked) {
-                            await _alarmSound.tocarSom('custom');
-                          }
-                        } else {
-                          await _alarmSound.definirSom(value);
-                          await _alarmSound.tocarSom(value);
-                        }
-                        setState(() {});
-                      }
-                    },
-                    child: Column(
-                      children: ServicoDeSomDoAlarme.sonsDisponiveis.map((
-                        sound,
-                      ) {
-                        final isSelected =
-                            _alarmSound.currentSoundId == sound.id;
-                        final isCustom = sound.id == 'custom';
-                        final subtitleText =
-                            isCustom && _alarmSound.customAudioName != null
-                                ? 'Arquivo: ${_alarmSound.customAudioName}'
-                                : sound.description;
-
-                        return Column(
-                          children: [
-                            ListTile(
-                              dense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              title: Text(
-                                sound.title,
-                                style: TextStyle(
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                  color: isSelected
-                                      ? theme.colorScheme.primary
-                                      : null,
-                                ),
-                              ),
-                              subtitle: Text(
-                                subtitleText,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: isCustom &&
-                                          _alarmSound.customAudioName != null
-                                      ? theme.colorScheme.primary
-                                      : null,
-                                ),
-                              ),
-                              leading: Radio<String>(value: sound.id),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.play_circle_outline,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    tooltip: 'Ouvir som',
-                                    onPressed: () async {
-                                      if (isCustom &&
-                                          _alarmSound.customAudioPath == null) {
-                                        final picked = await _alarmSound
-                                            .selecionarAudioPersonalizado();
-                                        if (picked) {
-                                          await _alarmSound.tocarSom('custom');
-                                          setState(() {});
-                                        }
-                                        return;
-                                      }
-                                      await _alarmSound.tocarSom(sound.id);
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.stop_circle_outlined,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                    tooltip: 'Parar áudio',
-                                    onPressed: () async {
-                                      await _alarmSound.pararAudio();
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isCustom)
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(48, 0, 8, 8),
-                                child: Row(
-                                  children: [
-                                    OutlinedButton.icon(
-                                      style: OutlinedButton.styleFrom(
-                                        visualDensity: VisualDensity.compact,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                      ),
-                                      onPressed: () async {
-                                        final picked = await _alarmSound
-                                            .selecionarAudioPersonalizado();
-                                        if (picked) {
-                                          _mostrarMensagem(
-                                            'Áudio selecionado: ${_alarmSound.customAudioName}',
-                                          );
-                                          await _alarmSound.tocarSom('custom');
-                                        }
-                                        setState(() {});
-                                      },
-                                      icon: const Icon(
-                                        Icons.audio_file_outlined,
-                                        size: 16,
-                                      ),
-                                      label: Text(
-                                        _alarmSound.customAudioName == null
-                                            ? 'Escolher áudio do celular'
-                                            : 'Trocar áudio',
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                    ),
-                                    if (_alarmSound.customAudioName !=
-                                        null) ...[
-                                      const SizedBox(width: 8),
-                                      TextButton(
-                                        style: TextButton.styleFrom(
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                        onPressed: () async {
-                                          await _alarmSound
-                                              .removerAudioPersonalizado();
-                                          setState(() {});
-                                        },
-                                        child: const Text(
-                                          'Remover',
-                                          style: TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                          ],
-                        );
-                      }).toList(),
+                  ListTile(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    leading: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.music_note_rounded,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
                     ),
+                    title: const Text(
+                      'Som do Alarme de Descanso',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      'Som ativo: ${ServicoDeSomDoAlarme.sonsDisponiveis.firstWhere((s) => s.id == _alarmSound.currentSoundId, orElse: () => ServicoDeSomDoAlarme.sonsDisponiveis.first).title}',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                theme.colorScheme.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'Escolher',
+                            style: TextStyle(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.chevron_right_rounded),
+                      ],
+                    ),
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const TelaSeletorDeSons(),
+                        ),
+                      );
+                      if (mounted) setState(() {});
+                    },
                   ),
                   const Divider(),
                   SwitchListTile(
@@ -1385,7 +1379,7 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
                     style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                   subtitle: const Text(
-                    'Versão 1.4.1 (Build 8) • Coach Fisiológico, PDF Nativo, AMOLED e Catálogo +2.000 exercícios',
+                    'Versão 1.4.2 (Build 9) • Coach Fisiológico, PDF Nativo, AMOLED e Catálogo +2.000 exercícios',
                   ),
                 ),
                 const Divider(height: 1),
@@ -1407,6 +1401,59 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
                 const Divider(height: 1),
                 ListTile(
                   leading: Icon(
+                    Icons.privacy_tip_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  title: const Text(
+                    'Política de Privacidade & Termos',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                  ),
+                  subtitle: const Text(
+                    'Consulte a política completa de dados locais e ausência de coleta remota',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => _exibirPoliticaDePrivacidade(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(
+                    Icons.mail_outline_rounded,
+                    color: theme.colorScheme.primary,
+                  ),
+                  title: const Text(
+                    'Suporte & Contato Oficial',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                  ),
+                  subtitle: const Text(
+                    'luanthierry.suporte@gmail.com',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.copy_rounded, size: 18),
+                  onTap: () async {
+                    await Clipboard.setData(
+                      const ClipboardData(
+                        text: 'luanthierry.suporte@gmail.com',
+                      ),
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'E-mail luanthierry.suporte@gmail.com copiado!',
+                          ),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(
                     Icons.code_rounded,
                     color: theme.colorScheme.primary,
                   ),
@@ -1424,7 +1471,7 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
                     showLicensePage(
                       context: context,
                       applicationName: 'Offline Gym (Criador: Luan Thierry)',
-                      applicationVersion: '1.4.1+8',
+                      applicationVersion: '1.4.2+9',
                       applicationLegalese:
                           '© 2026 Luan Thierry (@LuanThierry) — Criador e Autor Original.\nDistribuído sob a Licença MIT (100% Offline & Open Source). O nome "Offline Gym", logotipos e ícones pertencem exclusivamente ao criador.',
                     );
@@ -1432,6 +1479,149 @@ class _EstadoDaTelaDeConfiguracoes extends State<TelaDeConfiguracoes> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exibirPoliticaDePrivacidade(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 10),
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: cs.outlineVariant.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: cs.primary.withValues(alpha: 0.15),
+                      child: Icon(Icons.privacy_tip_rounded, color: cs.primary, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Política de Privacidade',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            'Versão 1.4.2 (Build 9) • 100% Offline',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  children: [
+                    _itemSecaoPolitica(
+                      titulo: '1. Coleta e Compartilhamento de Dados',
+                      texto:
+                          'O Offline Gym foi construído sob o princípio de Privacidade Total no Dispositivo. O aplicativo NÃO possui a permissão android.permission.INTERNET, não utiliza servidores na nuvem, não contém Google Analytics, Firebase, Facebook SDK ou qualquer biblioteca de telemetria ou anúncios. Seus treinos, fotos, peso e hábitos NUNCA saem do seu aparelho sem sua ação explícita.',
+                    ),
+                    _itemSecaoPolitica(
+                      titulo: '2. Armazenamento Local no Aparelho',
+                      texto:
+                          'Todas as informações permanecem guardadas no banco de dados SQLite interno e pasta privada do sandbox do próprio aplicativo. Nenhum dado é indexado publicamente por outros apps instalados no aparelho.',
+                    ),
+                    _itemSecaoPolitica(
+                      titulo: '3. Permissões do Sistema',
+                      texto:
+                          '• Notificações (POST_NOTIFICATIONS): Usada exclusivamente para exibir lembretes de treinos semanais configurados por você e avisar quando o descanso entre séries terminar.\n• Vibração (VIBRATE): Usada para o feedback tátil configurável das séries e alarme do cronômetro.\n• Galeria/Câmera: Opcional, usada apenas se você decidir anexar fotos de evolução ao perfil ou diário.',
+                    ),
+                    _itemSecaoPolitica(
+                      titulo: '4. Backups Criptografados (.ogb)',
+                      texto:
+                          'Os backups exportados são protegidos por criptografia autenticada AES-256-GCM combinada com derivação de chave Argon2id a partir da senha definida exclusivamente por você.',
+                    ),
+                    _itemSecaoPolitica(
+                      titulo: '5. Exclusão e Retenção dos Dados',
+                      texto:
+                          'Você possui total controle para apagar qualquer exercício, histórico ou backup a qualquer momento nas telas do app. Ao desinstalar o app ou limpar seus dados no Android/iOS, todos os registros locais são apagados de forma definitiva.',
+                    ),
+                    _itemSecaoPolitica(
+                      titulo: '6. Isenção de Alegações Médicas',
+                      texto:
+                          'O Offline Gym é uma ferramenta de acompanhamento e registro esportivo. Seus cálculos de simetria, volume e descanso são estimativas informativas baseadas na literatura de treinamento e não substituem avaliação médica, fisioterapêutica ou de profissional de educação física.',
+                    ),
+                    _itemSecaoPolitica(
+                      titulo: '7. Responsável pelo Projeto, Contato & Código Aberto',
+                      texto:
+                          'Criador e Autor: Luan Thierry (@LuanThierry)\nE-mail de Suporte: luanthierry.suporte@gmail.com\nCódigo-fonte aberto sob Licença MIT no GitHub.',
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => _abrirLinkNoNavegador(
+                        'https://github.com/LuanThierry/offline-gym/blob/main/PRIVACY_POLICY.md',
+                      ),
+                      icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                      label: const Text('Ver Política Oficial no GitHub'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _itemSecaoPolitica({required String titulo, required String texto}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            texto,
+            style: const TextStyle(fontSize: 12.5, height: 1.4),
           ),
         ],
       ),

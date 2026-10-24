@@ -1,7 +1,7 @@
 name: offline_gym
 description: Aplicativo offline para planejar treinos, hábitos, tarefas e acompanhar a evolução.
 publish_to: none
-version: 1.4.1+8
+version: 1.4.2+9
 
 environment:
   sdk: '>=3.3.0 <4.0.0'

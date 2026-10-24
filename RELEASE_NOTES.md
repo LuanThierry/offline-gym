@@ -1,11 +1,27 @@
-# 🏋️‍♂️ Offline Gym — Versão 1.4.1 (Build 8)
+# 🏋️‍♂️ Offline Gym — Versão 1.4.2 (Build 9)
 
 > **Aplicativo 100% Offline, Gratuito e Sem Anúncios para Treinos, Hábitos e Evolução Corporal.**  
 > *Seus dados, sua privacidade, direto no seu celular.*
 
 ---
 
-## 🚀 O que há de novo na v1.4.1?
+## 🚀 O que há de novo na v1.4.2?
+
+### ⏱️ 1. Alarme Nativo de Descanso e Ducking Inteligente
+* **Alarme com Tela Desligada / Bloqueada:** Implementado canal nativo dedicado (`offline_gym_rest_alarm_v3`) com prioridade máxima e agendamento robusto no sistema operacional, garantindo o aviso sonoro pontual mesmo com o aparelho bloqueado.
+* **Música Sem Interrupção (Ducking):** Redução suave e temporária de volume para que músicas no Spotify, Deezer ou YouTube Music continuem tocando em segundo plano sem pausar nem cortar.
+* **Contagem 3-2-1 Sincronizada:** Bips sonoros e hápticos precisos nos últimos 3 segundos antes do término da série com a tela ligada.
+* **Validação Física Concluída:** Testado e aprovado em dispositivo real Android (Samsung Galaxy S23 / One UI).
+
+### ⚡ 2. Otimização de Performance e Fluidez no Histórico
+* **Fim do Delay ao Rolar:** O cálculo fisiológico do Coach e radar de simetria foram desacoplados e memorizados na memória com isolamento `RepaintBoundary`, eliminando qualquer travamento ou carregamento durante a rolagem rápida no Histórico a 120 FPS cravados.
+
+### 🛡️ 3. Conformidade Google Play e Transparência
+* **Permissões Documentadas:** Alinhamento estrito da Política de Privacidade com as diretrizes da Google Play Console (`CAMERA` local para fotos de perfil, diário e evolução, e `RECEIVE_BOOT_COMPLETED` para restauração de lembretes locais).
+
+---
+
+## 🌟 Recursos Consolidados na v1.4.1
 
 ### 📄 1. Exportação Nativa de Fichas e Relatórios em PDF e CSV
 * **Geração Binária Direta no Dispositivo:** O aplicativo agora renderiza documentos PDF de alta fidelidade sem depender de navegadores, WebView ou internet.

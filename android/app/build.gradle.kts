@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.offline_gym"
+    namespace = "io.github.luanthierry.offlinegym"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -28,7 +28,7 @@ android {
     defaultConfig {
         applicationId = "io.github.luanthierry.offlinegym"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         multiDexEnabled = true
         versionCode = flutter.versionCode
         versionName = flutter.versionName

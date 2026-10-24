@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../dominio/volume_muscular.dart';
+import '../provedores/estado_tema.dart';
 
 class RadarSimetriaMuscular extends StatelessWidget {
   const RadarSimetriaMuscular({
@@ -16,6 +18,10 @@ class RadarSimetriaMuscular extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final provedorTema = context.watch<ProvedorDeTema>();
+    final corSucesso = provedorTema.corSucessoNeon;
+    final corAlerta = provedorTema.corAlertaNeon;
+    final corPerigo = provedorTema.corPerigoNeon;
 
     // Agrupa dados para os 6 eixos principais do corpo humano
     final map = <String, int>{};
@@ -46,14 +52,14 @@ class RadarSimetriaMuscular extends StatelessWidget {
 
     Color corScore;
     String statusSimetria;
-    if (scoreSimetria >= 80) {
-      corScore = const Color(0xFF00B894);
+    if (scoreSimetria >= 75) {
+      corScore = corSucesso;
       statusSimetria = 'Ótima Simetria';
-    } else if (scoreSimetria >= 65) {
-      corScore = const Color(0xFFE67E22);
+    } else if (scoreSimetria >= 40) {
+      corScore = corAlerta;
       statusSimetria = 'Atenção ao Equilíbrio';
     } else {
-      corScore = const Color(0xFFD63031);
+      corScore = corPerigo;
       statusSimetria = 'Desequilíbrio Notável';
     }
 

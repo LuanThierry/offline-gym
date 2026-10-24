@@ -1,4 +1,5 @@
 import '../modelos/plano_de_treino.dart';
+import 'catalogo_exercicios_offline.dart';
 import 'volume_muscular.dart';
 
 /// Nível de gravidade ou tom do parecer do Coach Fisiológico.
@@ -24,6 +25,54 @@ class ParecerDoCoach {
   final TipoDeParecer tipo;
   final String? recomendacaoPratica;
   final int? iconeCodePoint;
+}
+
+/// Registro rápido de prontidão diária (biofeedback do atleta: energia, sono, articulações).
+class RegistroDeProntidaoDiaria {
+  const RegistroDeProntidaoDiaria({
+    required this.energia,
+    required this.sono,
+    required this.dorArticular,
+    this.articulacaoComDor,
+  });
+
+  final int energia; // 1 a 5
+  final int sono; // 1 a 5
+  final int dorArticular; // 0 a 5 (0 = sem dor)
+  final String? articulacaoComDor;
+
+  factory RegistroDeProntidaoDiaria.deMapa(Map<String, Object?> mapa) {
+    return RegistroDeProntidaoDiaria(
+      energia: (mapa['energia'] as num?)?.toInt() ?? 3,
+      sono: (mapa['sono'] as num?)?.toInt() ?? 3,
+      dorArticular: (mapa['dorArticular'] as num?)?.toInt() ?? 0,
+      articulacaoComDor: mapa['articulacaoComDor'] as String?,
+    );
+  }
+
+  Map<String, Object?> paraMapa() => <String, Object?>{
+        'energia': energia,
+        'sono': sono,
+        'dorArticular': dorArticular,
+        'articulacaoComDor': articulacaoComDor,
+      };
+}
+
+/// Identificação de estagnação de carga/repetições em um exercício específico.
+class DeteccaoDePlato {
+  const DeteccaoDePlato({
+    required this.nomeExercicio,
+    required this.sessoesSemEvolucao,
+    required this.cargaKg,
+    required this.repeticoes,
+    required this.estrategiaSugerida,
+  });
+
+  final String nomeExercicio;
+  final int sessoesSemEvolucao;
+  final double cargaKg;
+  final int repeticoes;
+  final String estrategiaSugerida;
 }
 
 /// Estimativa individual de recuperação e fadiga residual por grupo muscular.
@@ -55,6 +104,7 @@ class DiagnosticoDoCoach {
     required this.pareceres,
     required this.resumoGeral,
     this.recuperacaoMuscular = const <StatusRecuperacaoMuscular>[],
+    this.volumeSemanal = const <MarcoDeVolumeMuscular>[],
   });
 
   final String saudacaoPersonalizada;
@@ -64,6 +114,7 @@ class DiagnosticoDoCoach {
   final List<ParecerDoCoach> pareceres;
   final String resumoGeral;
   final List<StatusRecuperacaoMuscular> recuperacaoMuscular;
+  final List<MarcoDeVolumeMuscular> volumeSemanal;
 }
 
 /// Motor de Inteligência Própria Offline de Treinamento e Biomecânica.
@@ -84,6 +135,81 @@ class CoachCientificoOffline {
     'Panturrilhas': 36,
     'Abdômen & Core': 36,
   };
+
+  /// Detecta se algum exercício nas últimas séries históricas está estagnado
+  /// com a mesma carga e repetições por 3 ou mais sessões distintas e consecutivas.
+  static List<DeteccaoDePlato> detectarPlatos(List<SerieDoTreino> seriesRecentes) {
+    final porExercicio = <String, List<SerieDoTreino>>{};
+    for (final s in seriesRecentes) {
+      if (s.tipo == 'aquecimento' || s.cargaUtilizada <= 0) continue;
+      porExercicio.putIfAbsent(s.nomeExercicio, () => []).add(s);
+    }
+
+    final platos = <DeteccaoDePlato>[];
+    for (final entry in porExercicio.entries) {
+      final nome = entry.key;
+      final series = entry.value;
+
+      // Agrupa séries por sessão distinta de treino (preserva ordem do banco)
+      final sessoesMap = <String, List<SerieDoTreino>>{};
+      for (var i = 0; i < series.length; i++) {
+        final s = series[i];
+        final sessionKey = s.idHistoricoTreino?.toString() ??
+            (s.dataISO != null && s.dataISO!.isNotEmpty
+                ? s.dataISO!.split('T').first
+                : 'sessao_avulsa_');
+        sessoesMap.putIfAbsent(sessionKey, () => []).add(s);
+      }
+
+      // Se o exercício foi realizado em menos de 3 sessões distintas, não há histórico suficiente para platô
+      if (sessoesMap.length < 3) continue;
+
+      // Obtém as 3 sessões mais recentes
+      final ultimas3Sessoes = sessoesMap.values.take(3).toList();
+
+      // Para cada sessão, identifica o melhor desempenho (maior carga de trabalho e reps nessa carga)
+      final desempenhosPorSessao = ultimas3Sessoes.map((sessoesSeries) {
+        double maxCarga = 0;
+        int maxReps = 0;
+        for (final s in sessoesSeries) {
+          if (s.cargaUtilizada > maxCarga) {
+            maxCarga = s.cargaUtilizada;
+            maxReps = s.repeticoes;
+          } else if (s.cargaUtilizada == maxCarga && s.repeticoes > maxReps) {
+            maxReps = s.repeticoes;
+          }
+        }
+        return (carga: maxCarga, reps: maxReps);
+      }).toList();
+
+      final sessaoRecente = desempenhosPorSessao[0];
+      final sessaoIntermediaria = desempenhosPorSessao[1];
+      final sessaoAntiga = desempenhosPorSessao[2];
+
+      if (sessaoRecente.carga <= 0) continue;
+
+      final mesmaCargaNas3 = sessaoRecente.carga == sessaoIntermediaria.carga &&
+          sessaoIntermediaria.carga == sessaoAntiga.carga;
+
+      // Platô: mesma carga nas 3 sessões e repetições não aumentaram na sessão recente
+      final semEvolucaoDeReps = sessaoRecente.reps <= sessaoIntermediaria.reps &&
+          sessaoIntermediaria.reps <= sessaoAntiga.reps;
+
+      if (mesmaCargaNas3 && semEvolucaoDeReps) {
+        platos.add(
+          DeteccaoDePlato(
+            nomeExercicio: nome,
+            sessoesSemEvolucao: ultimas3Sessoes.length,
+            cargaKg: sessaoRecente.carga,
+            repeticoes: sessaoRecente.reps,
+            estrategiaSugerida:
+                'Aplique micro-sobrecarga (+0.5 ou +1 kg) ou execute a fase excêntrica em 3 segundos controlados.',
+          ),
+        );
+      }
+    }
+    return platos;
+  }
 
   /// Calcula a estimativa científica de recuperação individual por grupo muscular.
   static List<StatusRecuperacaoMuscular> estimarRecuperacaoMuscular({
@@ -153,12 +279,22 @@ class CoachCientificoOffline {
     double? pesoAtualKg,
     Map<String, DateTime>? ultimosTreinosPorGrupo,
     DateTime? dataReferencia,
+    List<ExercicioPlanejado>? exerciciosPlanejados,
+    RegistroDeProntidaoDiaria? prontidaoHoje,
+    List<DeteccaoDePlato>? platosDetectados,
   }) {
     final nome = (perfil?.nome.trim().isNotEmpty == true)
         ? perfil!.nome.trim().split(' ').first
         : 'Atleta';
     final nivel = perfil?.nivelExperiencia ?? 'Iniciante';
     final objetivo = perfil?.objetivoPrincipal ?? 'Hipertrofia';
+
+    final agora = dataReferencia ?? DateTime.now();
+    final recuperacao = estimarRecuperacaoMuscular(
+      ultimosTreinosPorGrupo:
+          ultimosTreinosPorGrupo ?? const <String, DateTime>{},
+      agora: agora,
+    );
 
     final pareceres = <ParecerDoCoach>[];
     final mapVolume = <String, int>{};
@@ -177,18 +313,246 @@ class CoachCientificoOffline {
 
     var scoreSimetria = 100;
 
+    // 0.0 BIOFEEDBACK DE PRONTIDÃO DIÁRIA (ENERGIA / SONO / ARTICULAÇÕES)
+    if (prontidaoHoje != null) {
+      if (prontidaoHoje.dorArticular >= 3 && prontidaoHoje.articulacaoComDor != null) {
+        pareceres.add(
+          ParecerDoCoach(
+            titulo: 'Atenção Articular: ${prontidaoHoje.articulacaoComDor}',
+            mensagem:
+                'Você registrou desconforto em ${prontidaoHoje.articulacaoComDor} (nível ${prontidaoHoje.dorArticular}/5). '
+                'Respeitar a sensibilidade articular previne compensações motoras indesejadas.',
+            recomendacaoPratica:
+                'Aqueça em amplitude progressiva, reduza a sobrecarga axial e evite posições de hiperextensão.',
+            tipo: TipoDeParecer.alertaFisiologico,
+          ),
+        );
+      } else if (prontidaoHoje.energia <= 2 || prontidaoHoje.sono <= 2) {
+        pareceres.add(
+          ParecerDoCoach(
+            titulo: 'Prontidão Moderada (Energia: ${prontidaoHoje.energia}/5 · Sono: ${prontidaoHoje.sono}/5)',
+            mensagem:
+                'Com nível de energia ou descanso reduzido, a taxa de disparo neural e a recuperação entre séries tornam-se mais lentas.',
+            recomendacaoPratica:
+                'Mantenha as cargas com 2 a 3 repetições de reserva (RIR 2-3). Evite ir até a falha concêntrica nesta sessão.',
+            tipo: TipoDeParecer.otimizacao,
+          ),
+        );
+      } else if (prontidaoHoje.energia >= 4 && prontidaoHoje.sono >= 4 && prontidaoHoje.dorArticular <= 1) {
+        pareceres.add(
+          ParecerDoCoach(
+            titulo: 'Prontidão Máxima de Treino! ⚡',
+            mensagem:
+                'Alta energia (${prontidaoHoje.energia}/5) e sono reparador (${prontidaoHoje.sono}/5) registrados. Seu organismo está em ótimo estado de prontidão física.',
+            recomendacaoPratica:
+                'Excelente oportunidade para tentar progredir 1 a 2 kg nas primeiras séries de trabalho!',
+            tipo: TipoDeParecer.destaque,
+          ),
+        );
+      }
+    }
+
+    // 0.01 ALERTA DE PLATÔ DE CARGA
+    if (platosDetectados != null && platosDetectados.isNotEmpty) {
+      for (final p in platosDetectados.take(2)) {
+        pareceres.add(
+          ParecerDoCoach(
+            titulo: 'Superando Platô: ${p.nomeExercicio}',
+            mensagem:
+                'A carga de ${p.cargaKg.toStringAsFixed(1).replaceAll(".0", "")} kg '
+                'permaneceu estável nas últimas ${p.sessoesSemEvolucao} sessões sem aumento de repetições.',
+            recomendacaoPratica: p.estrategiaSugerida,
+            tipo: TipoDeParecer.otimizacao,
+          ),
+        );
+      }
+    }
+
+    // 0. ANÁLISE INTEGRADA DO PLANO DE TREINO (OFFLINE)
+    if (exerciciosPlanejados != null && exerciciosPlanejados.isNotEmpty) {
+      final volumePlanejadoPorGrupo = <String, int>{};
+      final volumePlanejadoPorDia = <int, int>{};
+      final exerciciosPorDia = <int, List<ExercicioPlanejado>>{};
+
+      for (final ex in exerciciosPlanejados) {
+        final grupo =
+            CatalogoDeExerciciosOffline.identificarGrupoMuscular(ex.nome);
+        volumePlanejadoPorGrupo[grupo] =
+            (volumePlanejadoPorGrupo[grupo] ?? 0) + ex.series;
+        volumePlanejadoPorDia[ex.diaSemana] =
+            (volumePlanejadoPorDia[ex.diaSemana] ?? 0) + ex.series;
+        exerciciosPorDia
+            .putIfAbsent(ex.diaSemana, () => <ExercicioPlanejado>[])
+            .add(ex);
+      }
+
+      // 0.1 Prontidão Fisiológica para o Treino de Hoje
+      final diaHoje = agora.weekday;
+      final exerciciosDeHoje =
+          exerciciosPorDia[diaHoje] ?? const <ExercicioPlanejado>[];
+      if (exerciciosDeHoje.isNotEmpty) {
+        final gruposDeHoje = exerciciosDeHoje
+            .map((e) =>
+                CatalogoDeExerciciosOffline.identificarGrupoMuscular(e.nome))
+            .toSet();
+
+        final gruposFadigadosHoje = <StatusRecuperacaoMuscular>[];
+        final gruposProntosHoje = <String>[];
+
+        for (final g in gruposDeHoje) {
+          final status = recuperacao.firstWhere(
+            (r) => r.grupoMuscular == g,
+            orElse: () => StatusRecuperacaoMuscular(
+              grupoMuscular: g,
+              percentualRecuperado: 100,
+              horasDesdeUltimoTreino: null,
+              tempoTotalRecuperacaoHoras: 48,
+              statusTexto: 'Pronto',
+            ),
+          );
+          if (status.percentualRecuperado < 55 &&
+              status.horasDesdeUltimoTreino != null) {
+            gruposFadigadosHoje.add(status);
+          } else if (status.percentualRecuperado >= 90) {
+            gruposProntosHoje.add(g);
+          }
+        }
+
+        if (gruposFadigadosHoje.isNotEmpty) {
+          final nomesFadigados = gruposFadigadosHoje
+              .map((s) => '${s.grupoMuscular} (${s.percentualRecuperado}%)')
+              .join(', ');
+          pareceres.add(
+            ParecerDoCoach(
+              titulo: 'Atenção ao Treino de Hoje: Fadiga Residual',
+              mensagem:
+                  'Seu plano reserva hoje exercícios para $nomesFadigados, grupos que ainda estão na janela ativa de regeneração. '
+                  'Treinar com fadiga residual elevada pode reduzir o rendimento de carga e limitar o estímulo.',
+              recomendacaoPratica:
+                  'Aumente as séries de aquecimento específico ou reduza 1 série de trabalho para garantir boa técnica biomecânica.',
+              tipo: TipoDeParecer.alertaFisiologico,
+            ),
+          );
+        } else if (gruposProntosHoje.length == gruposDeHoje.length &&
+            gruposDeHoje.isNotEmpty) {
+          pareceres.add(
+            ParecerDoCoach(
+              titulo: 'Luz Verde para o Treino de Hoje! 🟢',
+              mensagem:
+                  'Todos os grupos musculares programados para hoje (${gruposProntosHoje.join(', ')}) estão 100% recuperados e prontos para estímulo máximo.',
+              recomendacaoPratica:
+                  'Momento ideal para buscar progressão de carga ou repetições mantendo a execução biomecânica impecável.',
+              tipo: TipoDeParecer.destaque,
+            ),
+          );
+        }
+      }
+
+      // 0.2 Sobrecarga em Sessão Única do Plano (> 24 séries no mesmo dia)
+      for (final entry in volumePlanejadoPorDia.entries) {
+        final dia = entry.key;
+        final series = entry.value;
+        if (series > 24) {
+          final nomeDia = ExercicioPlanejado.nomeDoDiaDaSemana(dia);
+          pareceres.add(
+            ParecerDoCoach(
+              titulo: 'Volume Excessivo no Plano ($nomeDia)',
+              mensagem:
+                  'Você programou $series séries em $nomeDia. '
+                  'A literatura científica aponta que sessões com mais de 20 a 24 séries atingem o limite de volume efetivo (junk volume), aumentando o desgaste sem ganhos proporcionais.',
+              recomendacaoPratica:
+                  'Considere transferir 4 a 6 séries para outro dia da semana para manter alta intensidade de contração.',
+              tipo: TipoDeParecer.alertaFisiologico,
+            ),
+          );
+          break;
+        }
+      }
+
+      // 0.3 Grupos Musculares Essenciais Ausentes no Plano
+      if (exerciciosPlanejados.length >= 6) {
+        const gruposEssenciais = <String>[
+          'Peito',
+          'Costas',
+          'Quadríceps',
+          'Posterior & Glúteos',
+          'Ombros',
+        ];
+        final gruposFaltantesNoPlano = gruposEssenciais
+            .where((g) => (volumePlanejadoPorGrupo[g] ?? 0) == 0)
+            .toList();
+
+        if (gruposFaltantesNoPlano.isNotEmpty) {
+          final faltantesStr = gruposFaltantesNoPlano.join(', ');
+          pareceres.add(
+            ParecerDoCoach(
+              titulo: 'Grupo Ausente no Plano: $faltantesStr',
+              mensagem:
+                  'Seu plano de treino possui ${exerciciosPlanejados.length} exercícios programados, mas nenhum mapeado para $faltantesStr. '
+                  'Desenvolver todos os grandes grupos previne descompensações articulares e assimetrias posturais.',
+              recomendacaoPratica:
+                  'Adicione ao menos 2 a 4 séries semanais para $faltantesStr na sua rotina.',
+              tipo: TipoDeParecer.alertaFisiologico,
+            ),
+          );
+        }
+      }
+
+      // 0.4 Desproporção Empurrar vs Puxar no Plano Semanal
+      final empurrarPlano = (volumePlanejadoPorGrupo['Peito'] ?? 0) +
+          (volumePlanejadoPorGrupo['Tríceps'] ?? 0);
+      final puxarPlano = (volumePlanejadoPorGrupo['Costas'] ?? 0) +
+          (volumePlanejadoPorGrupo['Bíceps'] ?? 0);
+      if (empurrarPlano >= 12 &&
+          puxarPlano > 0 &&
+          empurrarPlano > (puxarPlano * 2)) {
+        pareceres.add(
+          ParecerDoCoach(
+            titulo: 'Desproporção no Plano: Empurrar vs Puxar',
+            mensagem:
+                'Seu plano semanal programa $empurrarPlano séries de empurrar contra apenas $puxarPlano séries de puxar. '
+                'Equilibrar os dois padrões constrói postura estável e desenvolvimento harmônico.',
+            recomendacaoPratica:
+                'Inclua mais remadas ou puxadas no plano para equiparar o volume com os supinos.',
+            tipo: TipoDeParecer.otimizacao,
+          ),
+        );
+      }
+
+      // 0.5 Adesão Semanal ao Plano (Executado vs Planejado)
+      final totalSeriesPlanejadas =
+          volumePlanejadoPorGrupo.values.fold<int>(0, (a, b) => a + b);
+      final totalSeriesExecutadas =
+          mapVolume.values.fold<int>(0, (a, b) => a + b);
+      if (totalSeriesPlanejadas >= 12 &&
+          totalSeriesExecutadas >= (totalSeriesPlanejadas * 0.85)) {
+        final percAdesao =
+            ((totalSeriesExecutadas / totalSeriesPlanejadas) * 100).round();
+        pareceres.add(
+          ParecerDoCoach(
+            titulo: 'Excelente Adesão ao Plano ($percAdesao%)',
+            mensagem:
+                'Parabéns pela dedicação! Você já completou $totalSeriesExecutadas das $totalSeriesPlanejadas séries programadas nesta semana.',
+            recomendacaoPratica:
+                'Mantenha a regularidade para colher adaptações neuromusculares contínuas.',
+            tipo: TipoDeParecer.sucesso,
+          ),
+        );
+      }
+    }
+
     // 1. ANÁLISE BIOMECÂNICA: Peitoral vs Dorsal (Equilíbrio Postural Superior)
     if (peito >= 10 && costas > 0 && peito > (costas * 1.5)) {
       scoreSimetria -= 20;
       pareceres.add(
         ParecerDoCoach(
-          titulo: 'Alerta Postural: Dominância de Peitoral',
+          titulo: 'Equilíbrio Muscular: Dominância de Peitoral',
           mensagem:
               'Você completou $peito séries de Peito e apenas $costas de Costas nesta semana. '
               'Estudos de biomecânica apontam que a dominância dos rotadores internos (peitoral) sobre os retratores escapulares '
-              'pode provocar protrusão de ombros e sobrecarga no manguito rotador.',
+              'pode alterar o alinhamento postural da cintura escapular.',
           recomendacaoPratica:
-              'Aumente de 4 a 6 séries de remadas ou puxadas para equilibrar a cintura escapular.',
+              'Aumente de 4 a 6 séries de remadas ou puxadas para equilibrar o desenvolvimento muscular.',
           tipo: TipoDeParecer.alertaFisiologico,
         ),
       );
@@ -211,7 +575,7 @@ class CoachCientificoOffline {
           titulo: 'Excelente Simetria Torácica',
           mensagem:
               'Sua proporção Peitoral ($peito séries) vs Costas ($costas séries) está biomecanicamente equilibrada. '
-              'Essa harmonia protege os ombros e constrói uma postura atlética forte.',
+              'Essa harmonia constrói uma postura atlética forte e estável.',
           tipo: TipoDeParecer.sucesso,
         ),
       );
@@ -222,13 +586,13 @@ class CoachCientificoOffline {
       scoreSimetria -= 25;
       pareceres.add(
         ParecerDoCoach(
-          titulo: 'Prevenção de Lesões: Relação I:Q de Pernas',
+          titulo: 'Equilíbrio Muscular: Relação Posterior vs Quadríceps',
           mensagem:
-              'Você realizou $quad séries de Quadríceps contra apenas $posterior de Posterior/Glúteos. '
-              'Na fisiologia esportiva, a razão de força isquiotibiais/quadríceps (razão I:Q) desbalanceada eleva o estresse no tendão patelar '
-              'e no ligamento cruzado anterior (LCA).',
+              'Você realizou $quad séries de Quadríceps contra $posterior de Posterior/Glúteos. '
+              'Na fisiologia esportiva, um volume equilibrado entre a musculatura anterior e posterior de pernas '
+              'favorece uma distribuição biomecânica mais estável e harmônica.',
           recomendacaoPratica:
-              'Inclua Stiff, mesa flexora ou elevação pélvica para blindar os joelhos.',
+              'Considere incluir Stiff, mesa flexora ou elevação pélvica para equilibrar o desenvolvimento dos membros inferiores.',
           tipo: TipoDeParecer.alertaFisiologico,
         ),
       );
@@ -317,7 +681,7 @@ class CoachCientificoOffline {
             titulo: 'Sinal de Alerta de Sobrecarga (MRV)',
             mensagem:
                 'Os grupos ($nomesGrupos) entraram na faixa de sobrecarga máxima recuperável. '
-                'Se você sentir queda na força na próxima semana ou dores articulares, seu corpo está pedindo regeneração.',
+                'Se você sentir queda no rendimento na próxima semana ou cansaço acumulado, seu corpo está pedindo regeneração.',
             recomendacaoPratica:
                 'Mantenha o foco no sono e na ingestão proteica.',
             tipo: TipoDeParecer.alertaFisiologico,
@@ -391,12 +755,6 @@ class CoachCientificoOffline {
           'Bons treinos realizados! Pequenos ajustes de volume entre agonistas e antagonistas maximizarão sua evolução e postura.';
     }
 
-    final recuperacao = estimarRecuperacaoMuscular(
-      ultimosTreinosPorGrupo:
-          ultimosTreinosPorGrupo ?? const <String, DateTime>{},
-      agora: dataReferencia,
-    );
-
     return DiagnosticoDoCoach(
       saudacaoPersonalizada: 'Coach Fisiológico · $nome ($nivel · $objetivo)',
       indiceEquilibrioPercentual: scoreSimetria.clamp(20, 100),
@@ -405,6 +763,7 @@ class CoachCientificoOffline {
       pareceres: pareceres,
       resumoGeral: resumo,
       recuperacaoMuscular: recuperacao,
+      volumeSemanal: volumeSemanal,
     );
   }
 }

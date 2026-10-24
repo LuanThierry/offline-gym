@@ -17,8 +17,10 @@ import '../dominio/catalogo_exercicios_offline.dart';
 import '../dominio/recursos_avancados.dart';
 import '../dominio/sistema_gamificacao.dart';
 import '../modelos/plano_de_treino.dart';
+import '../provedores/estado_tema.dart';
 import '../provedores/estado_treino.dart';
 import '../servicos/som_do_alarme.dart';
+import '../servicos/notificacoes_de_treino.dart';
 
 enum _AbaHoje { treino, habitos, tarefas }
 
@@ -443,23 +445,24 @@ class _SecaoDeTreinoHoje extends StatelessWidget {
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: allSetsCompleted
-                      ? (temaEscuro
-                          ? const Color(0xFF1B5E20)
-                          : const Color(0xFFA5D6A7))
+                      ? context.watch<ProvedorDeTema>().corSucessoNeon
                       : (temaEscuro
                           ? const Color(0xFF353545)
                           : const Color(0xFF2D3436)),
-                  foregroundColor: allSetsCompleted && !temaEscuro
-                      ? const Color(0xFF1B5E20)
-                      : Colors.white,
+                  foregroundColor: allSetsCompleted
+                      ? const Color(0xFF003816)
+                      : (temaEscuro ? Colors.white70 : Colors.white),
                   minimumSize: const Size(double.infinity, 48),
-                  elevation: 2,
+                  elevation: allSetsCompleted ? 6 : 2,
+                  shadowColor: allSetsCompleted
+                      ? context.watch<ProvedorDeTema>().corSucessoNeon.withValues(alpha: 0.6)
+                      : null,
                 ),
                 onPressed: aoFinalizarTreino,
                 icon: const Icon(Icons.check_circle_outline),
-                label: Text(
-                  allSetsCompleted ? 'Finalizar Treino' : 'Finalizar Treino',
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                label: const Text(
+                  'Finalizar Treino',
+                  style: TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -470,6 +473,16 @@ class _SecaoDeTreinoHoje extends StatelessWidget {
 }
 
 class _CabecalhoDoTreinoHoje extends StatelessWidget {
+  void _mostrarModalProntidao(BuildContext context, ProvedorDeTreino provedor) {
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ModalProntidaoDiaria(provedor: provedor),
+    );
+  }
+
   const _CabecalhoDoTreinoHoje({
     required this.provedor,
     required this.diaSemana,
@@ -554,31 +567,80 @@ class _CabecalhoDoTreinoHoje extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.fitness_center_rounded,
-                    size: 13,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    '${exercicios.length} ${exercicios.length == 1 ? 'exercício' : 'exercícios'}',
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
+                  onTap: () => _mostrarModalProntidao(context, provedor),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: provedor.prontidaoHoje != null
+                          ? const Color(0xFF00E676).withValues(alpha: 0.16)
+                          : theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: provedor.prontidaoHoje != null
+                            ? const Color(0xFF00E676).withValues(alpha: 0.5)
+                            : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.speed_rounded,
+                          size: 13,
+                          color: provedor.prontidaoHoje != null
+                              ? const Color(0xFF00E676)
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          provedor.prontidaoHoje != null
+                              ? '${provedor.prontidaoHoje!.energia}/5 ⚡'
+                              : 'Prontidão',
+                          style: TextStyle(
+                            color: provedor.prontidaoHoje != null
+                                ? const Color(0xFF00E676)
+                                : theme.colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.fitness_center_rounded,
+                        size: 13,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        '${exercicios.length} ${exercicios.length == 1 ? 'exercício' : 'exercícios'}',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -844,12 +906,16 @@ class _CartaoDeExercicioDoTreino extends StatelessWidget {
             File(localPath).existsSync();
 
         final temaEscuro = Theme.of(context).brightness == Brightness.dark;
+        final provedorTema = context.watch<ProvedorDeTema>();
+        final corDestaque = provedorTema.corInvertidaDestaque;
         final exerciseComplete =
             enabled && provedor.exercicioEstaConcluido(currentExercise);
-        final completionColor =
-            temaEscuro ? const Color(0xFF1B3026) : const Color(0xFFE8F2EA);
+        final corSucesso = provedorTema.corSucessoNeon;
+        final completionColor = temaEscuro
+            ? corSucesso.withValues(alpha: 0.12)
+            : corSucesso.withValues(alpha: 0.07);
         final completionBorderColor =
-            temaEscuro ? const Color(0xFF315B41) : const Color(0xFFB7D7BE);
+            corSucesso.withValues(alpha: temaEscuro ? 0.50 : 0.40);
         final ehUltimoExercicioPendente =
             enabled && provedor.ehUltimoExercicioPendente(currentExercise);
         final allWorkoutSetsCompleted =
@@ -962,6 +1028,36 @@ class _CartaoDeExercicioDoTreino extends StatelessWidget {
                                 '${currentExercise.series} séries',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
+                              if (exerciseComplete)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: corSucesso.withValues(alpha: 0.16),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: corSucesso.withValues(alpha: 0.45),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.check_circle_rounded,
+                                          size: 12, color: corSucesso),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Concluído',
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w800,
+                                          color: corSucesso,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               if (ehUltimoExercicioPendente)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
@@ -1204,7 +1300,7 @@ class _CartaoDeExercicioDoTreino extends StatelessWidget {
                               'Marcar série ${seriesIndex + 1} de ${currentExercise.nome} como concluída',
                           child: Checkbox(
                             value: completed,
-                            activeColor: Theme.of(context).colorScheme.primary,
+                            activeColor: provedorTema.corSucessoNeon,
                             onChanged: enabled
                                 ? (value) {
                                       ServicoDeSomDoAlarme.instance
@@ -1286,12 +1382,28 @@ class _CartaoDeExercicioDoTreino extends StatelessWidget {
                                           ),
                                         ),
                                         if (ehRecordePessoal)
-                                          const Text(
-                                            '🏆 Recorde PR',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w800,
-                                              color: Color(0xFFFFB300),
+                                          Container(
+                                            margin: const EdgeInsets.only(top: 2),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 1.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: corDestaque.withValues(alpha: 0.18),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: corDestaque.withValues(alpha: 0.45),
+                                                width: 0.9,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              '🏆 RECORDE PR',
+                                              style: TextStyle(
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.w900,
+                                                color: corDestaque,
+                                                letterSpacing: 0.4,
+                                              ),
                                             ),
                                           ),
                                         Builder(
@@ -1494,10 +1606,12 @@ class _ControleDoCronometroDeDescanso extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final temaEscuro = theme.brightness == Brightness.dark;
-    const finishedColor = Color(0xFF00B894);
+    const finishedColor = Color(0xFF00E676);
     final accent = isFinished ? finishedColor : theme.colorScheme.primary;
     final background = isFinished
-        ? (temaEscuro ? const Color(0xFF143026) : const Color(0xFFE8F8F2))
+        ? (temaEscuro
+            ? finishedColor.withValues(alpha: 0.15)
+            : finishedColor.withValues(alpha: 0.10))
         : theme.colorScheme.surfaceContainerHighest;
     final progress = totalSeconds <= 0
         ? 0.0
@@ -1546,9 +1660,7 @@ class _ControleDoCronometroDeDescanso extends StatelessWidget {
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       color: isFinished
-                          ? (temaEscuro
-                              ? const Color(0xFF55EFC4)
-                              : const Color(0xFF007A58))
+                          ? finishedColor
                           : theme.colorScheme.onSurface,
                     ),
                     maxLines: 1,
@@ -2270,6 +2382,8 @@ class _PainelDoCronometroDeDescanso extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
+                  if (_construirAvisoAgendamento(context, state.ultimoResultadoAgendamento, finished) != null)
+                    _construirAvisoAgendamento(context, state.ultimoResultadoAgendamento, finished)!,
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
@@ -2288,6 +2402,80 @@ class _PainelDoCronometroDeDescanso extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget? _construirAvisoAgendamento(
+    BuildContext context,
+    ResultadoAgendamentoDescanso? resultado,
+    bool finished,
+  ) {
+    if (finished || resultado == null) return null;
+
+    String? mensagem;
+    IconData icone = Icons.info_outline_rounded;
+    Color cor = Colors.amber;
+
+    switch (resultado) {
+      case ResultadoAgendamentoDescanso.notificacaoNaoAutorizada:
+        mensagem =
+            'Notificações desativadas: o alarme tocará com o app aberto. Mantenha a tela ligada durante o descanso.';
+        icone = Icons.notifications_off_outlined;
+        cor = Colors.orangeAccent;
+        break;
+      case ResultadoAgendamentoDescanso.canalBloqueado:
+        mensagem =
+            'Canal de notificações bloqueado no sistema: ative o canal "Fim do Descanso" nas configurações do celular para ouvir com a tela desligada.';
+        icone = Icons.notifications_off_outlined;
+        cor = Colors.redAccent;
+        break;
+      case ResultadoAgendamentoDescanso.canalSemSom:
+        mensagem =
+            'Som do canal de descanso desativado: reative o som do canal "Fim do Descanso" nas configurações para ouvir o aviso sonoro.';
+        icone = Icons.volume_off_outlined;
+        cor = Colors.orangeAccent;
+        break;
+      case ResultadoAgendamentoDescanso.agendadoInexato:
+        mensagem =
+            'Agendamento inexato: o alarme pode atrasar com a tela bloqueada devido à economia de bateria do sistema.';
+        icone = Icons.schedule_rounded;
+        cor = Colors.amber;
+        break;
+      case ResultadoAgendamentoDescanso.falhaAoAgendar:
+        mensagem =
+            'Falha técnica ao registrar alarme no sistema. Mantenha o app na tela.';
+        icone = Icons.warning_amber_rounded;
+        cor = Colors.redAccent;
+        break;
+      case ResultadoAgendamentoDescanso.agendadoExato:
+      case ResultadoAgendamentoDescanso.descartadoPorConcorrencia:
+        return null;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: cor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: cor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(icone, size: 18, color: cor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              mensagem,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cor,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -4185,6 +4373,222 @@ class _ModalCalculadoraEAquecimentoState
           fontWeight: FontWeight.w700,
           color: Theme.of(context).colorScheme.primary,
         ),
+      ),
+    );
+  }
+}
+
+
+class _ModalProntidaoDiaria extends StatefulWidget {
+  const _ModalProntidaoDiaria({required this.provedor});
+
+  final ProvedorDeTreino provedor;
+
+  @override
+  State<_ModalProntidaoDiaria> createState() => _EstadoModalProntidaoDiaria();
+}
+
+class _EstadoModalProntidaoDiaria extends State<_ModalProntidaoDiaria> {
+  late int _energia;
+  late int _sono;
+  late int _dor;
+  String? _articulacao;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.provedor.prontidaoHoje;
+    _energia = p?.energia ?? 4;
+    _sono = p?.sono ?? 4;
+    _dor = p?.dorArticular ?? 0;
+    _articulacao = p?.articulacaoComDor ?? 'Nenhuma';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    const articulacoes = ['Nenhuma', 'Ombro', 'Joelho', 'Lombar', 'Cotovelo', 'Punho'];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E28) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: cs.outlineVariant.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: cs.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.speed_rounded, color: cs.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Prontidão & Biofeedback Diário',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      'Seus dados ajustam os alertas e conselhos do Coach.',
+                      style: TextStyle(fontSize: 11.5, color: cs.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // Energia
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Nível de Energia ⚡', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('$_energia / 5', style: TextStyle(fontWeight: FontWeight.w800, color: cs.primary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(5, (i) {
+              final val = i + 1;
+              final selected = _energia == val;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ChoiceChip(
+                    label: Center(child: Text('$val')),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _energia = val),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 14),
+
+          // Sono
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Qualidade do Sono 🌙', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('$_sono / 5', style: TextStyle(fontWeight: FontWeight.w800, color: cs.primary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(5, (i) {
+              final val = i + 1;
+              final selected = _sono == val;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  child: ChoiceChip(
+                    label: Center(child: Text('$val')),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _sono = val),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 14),
+
+          // Dor Articular
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Desconforto Articular 🩹', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text('$_dor / 5', style: TextStyle(fontWeight: FontWeight.w800, color: _dor >= 3 ? Colors.orangeAccent : cs.primary)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(6, (i) {
+              final selected = _dor == i;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: ChoiceChip(
+                    label: Center(child: Text('$i')),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _dor = i),
+                  ),
+                ),
+              );
+            }),
+          ),
+
+          if (_dor > 0) ...[
+            const SizedBox(height: 10),
+            const Text('Articulação mais sensível:', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: articulacoes.map((art) {
+                final selected = _articulacao == art;
+                return ChoiceChip(
+                  visualDensity: VisualDensity.compact,
+                  label: Text(art, style: const TextStyle(fontSize: 11)),
+                  selected: selected,
+                  onSelected: (_) => setState(() => _articulacao = art),
+                );
+              }).toList(),
+            ),
+          ],
+
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+              backgroundColor: const Color(0xFF00E676),
+              foregroundColor: const Color(0xFF003816),
+            ),
+            onPressed: () async {
+              await widget.provedor.salvarProntidaoDeHoje(
+                energia: _energia,
+                sono: _sono,
+                dorArticular: _dor,
+                articulacaoComDor: _dor > 0 && _articulacao != 'Nenhuma' ? _articulacao : null,
+              );
+              if (context.mounted) Navigator.of(context).pop();
+            },
+            icon: const Icon(Icons.check_circle_rounded),
+            label: const Text('Salvar Biofeedback', style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ],
       ),
     );
   }

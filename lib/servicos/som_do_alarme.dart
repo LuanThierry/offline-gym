@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -16,11 +16,15 @@ class OpcaoDeAlarme {
     required this.id,
     required this.title,
     required this.description,
+    this.categoria = 'Clássicos',
+    this.icone = Icons.music_note_rounded,
   });
 
   final String id;
   final String title;
   final String description;
+  final String categoria;
+  final IconData icone;
 }
 
 /// Níveis de intensidade de vibração e feedback tátil configuráveis pelo usuário.
@@ -81,55 +85,128 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
   static const String _prefKeyHapticIntensity = 'alarm_haptic_intensity';
 
   static const List<OpcaoDeAlarme> sonsDisponiveis = <OpcaoDeAlarme>[
+    // Clássicos
     OpcaoDeAlarme(
       id: 'digital',
       title: 'Beep Digital',
       description: 'Três bips rápidos e nítidos de alta frequência.',
+      categoria: 'Clássicos',
+      icone: Icons.alarm_rounded,
     ),
     OpcaoDeAlarme(
       id: 'classic',
       title: 'Alarme Clássico',
       description: 'Tom duplo estilo despertador eletrônico.',
+      categoria: 'Clássicos',
+      icone: Icons.access_time_filled_rounded,
     ),
     OpcaoDeAlarme(
       id: 'bell',
       title: 'Campainha de Academia',
       description: 'Tom de sino/gongo com reverberação suave.',
+      categoria: 'Clássicos',
+      icone: Icons.notifications_active_rounded,
     ),
     OpcaoDeAlarme(
       id: 'soft',
       title: 'Bip Suave',
       description: 'Tom agradável e discreto de tom médio.',
+      categoria: 'Clássicos',
+      icone: Icons.volume_down_rounded,
     ),
+    // Esportivos & Luta
     OpcaoDeAlarme(
       id: 'boxing_gong',
       title: 'Gongo de Boxe',
       description: 'Gongo metálico ressonante de ringue e round.',
+      categoria: 'Esportivos & Luta',
+      icone: Icons.sports_mma_rounded,
+    ),
+    OpcaoDeAlarme(
+      id: 'boxing_gong_double',
+      title: 'Gongo Duplo de Round',
+      description: 'Dois toques potentes marcando o fim do descanso.',
+      categoria: 'Esportivos & Luta',
+      icone: Icons.fitness_center_rounded,
     ),
     OpcaoDeAlarme(
       id: 'whistle',
       title: 'Apito de Treino',
       description: 'Apito esportivo vibrante de alta energia.',
+      categoria: 'Esportivos & Luta',
+      icone: Icons.sports_rounded,
     ),
+    OpcaoDeAlarme(
+      id: 'whistle_triple',
+      title: 'Apito Triplo de Árbitro',
+      description: 'Três silvos curtos e ágeis de retorno imediato.',
+      categoria: 'Esportivos & Luta',
+      icone: Icons.sports_score_rounded,
+    ),
+    OpcaoDeAlarme(
+      id: 'air_horn',
+      title: 'Corneta de Torcida',
+      description: 'Corneta esportiva potente de celebração de estádio.',
+      categoria: 'Esportivos & Luta',
+      icone: Icons.campaign_rounded,
+    ),
+    // Sintetizadores & Neon
     OpcaoDeAlarme(
       id: 'countdown',
       title: 'Largada 3-2-1',
       description: 'Três bips de preparação e tom agudo de liberação.',
+      categoria: 'Sintetizadores & Neon',
+      icone: Icons.timer_outlined,
     ),
     OpcaoDeAlarme(
       id: 'pulse',
       title: 'Pulso Sci-Fi Neon',
       description: 'Onda futurista sintetizada com modulação rápida.',
+      categoria: 'Sintetizadores & Neon',
+      icone: Icons.waves_rounded,
     ),
+    OpcaoDeAlarme(
+      id: 'laser_synth',
+      title: 'Laser Synth Neon',
+      description: 'Sweep descendente de sintetizador futurista.',
+      categoria: 'Sintetizadores & Neon',
+      icone: Icons.flash_on_rounded,
+    ),
+    OpcaoDeAlarme(
+      id: 'arcade_powerup',
+      title: 'Power-Up Arcade 8-Bit',
+      description: 'Arpeggio ascendente retrô celebrando sua série.',
+      categoria: 'Sintetizadores & Neon',
+      icone: Icons.sports_esports_rounded,
+    ),
+    OpcaoDeAlarme(
+      id: 'sonar_ping',
+      title: 'Sonar Ping Submarino',
+      description: 'Pulso harmônico profundo e nítido com eco.',
+      categoria: 'Sintetizadores & Neon',
+      icone: Icons.radar_rounded,
+    ),
+    OpcaoDeAlarme(
+      id: 'electro_drop',
+      title: 'Sub-Bass Drop 808',
+      description: 'Impacto grave eletrônico com presença forte.',
+      categoria: 'Sintetizadores & Neon',
+      icone: Icons.speaker_rounded,
+    ),
+    // Sistema & Celular
     OpcaoDeAlarme(
       id: 'system',
       title: 'Som do Sistema',
       description: 'Bip padrão audível com a vibração configurada.',
+      categoria: 'Sistema & Celular',
+      icone: Icons.phonelink_ring_rounded,
     ),
     OpcaoDeAlarme(
       id: 'custom',
       title: 'Música / Áudio do Celular',
       description: 'Escolha um arquivo MP3/WAV/M4A da memória do aparelho.',
+      categoria: 'Sistema & Celular',
+      icone: Icons.audio_file_rounded,
     ),
   ];
 
@@ -158,6 +235,23 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
   String? get customAudioName => _customAudioName;
   bool get isPlaying => _isPlaying;
 
+  static AudioContext get audioContextConfig => AudioContext(
+        android: const AudioContextAndroid(
+          isSpeakerphoneOn: false,
+          stayAwake: false,
+          contentType: AndroidContentType.sonification,
+          usageType: AndroidUsageType.assistanceSonification,
+          audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+        ),
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playback,
+          options: const {
+            AVAudioSessionOptions.mixWithOthers,
+            AVAudioSessionOptions.duckOthers,
+          },
+        ),
+      );
+
   Future<void> inicializar() async {
     if (_initialized) return;
     try {
@@ -175,8 +269,17 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
       _countdownBeepEnabled = prefs.getBool(_prefKeyCountdownBeep) ?? true;
       _customAudioPath = prefs.getString(_prefKeyCustomAudioPath);
       _customAudioName = prefs.getString(_prefKeyCustomAudioName);
+
+      try {
+        await AudioPlayer.global.setAudioContext(audioContextConfig);
+      } catch (_) {}
+
       _player = AudioPlayer();
       await _player?.setReleaseMode(ReleaseMode.stop);
+      try {
+        await _player?.setAudioContext(audioContextConfig);
+      } catch (_) {}
+
       WidgetsBinding.instance.addObserver(this);
       _initialized = true;
     } catch (_) {
@@ -318,10 +421,22 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
     _isPlaying = false;
     try {
       await _player?.stop();
-    } catch (_) {}
+    } catch (_) {
+      try {
+        await _player?.dispose();
+      } catch (_) {}
+      _player = null;
+    }
   }
 
+  @visibleForTesting
+  Future<void> Function()? mockTocarAlarme;
+
   Future<void> tocarAlarme() async {
+    if (mockTocarAlarme != null) {
+      await mockTocarAlarme!();
+      return;
+    }
     await tocarSom(_currentSoundId);
   }
 
@@ -333,10 +448,16 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
       vibrarClique();
     }
     try {
-      _tickPlayer ??= AudioPlayer();
-      await _tickPlayer?.setReleaseMode(ReleaseMode.stop);
-      _cachedTickWav ??= _buildShortTickBeep(22050);
-      await _tickPlayer?.play(BytesSource(_cachedTickWav!));
+      if (_tickPlayer == null) {
+        final tick = AudioPlayer();
+        await tick.setReleaseMode(ReleaseMode.stop);
+        try {
+          await tick.setAudioContext(audioContextConfig);
+        } catch (_) {}
+        _tickPlayer = tick;
+      }
+      final filePath = await _obterCaminhoDoTickWav();
+      await _tickPlayer?.play(DeviceFileSource(filePath));
     } catch (_) {
       if (_isAppForeground) {
         unawaited(SystemSound.play(SystemSoundType.click));
@@ -363,8 +484,14 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
       final caminho = _customAudioPath;
       if (caminho != null && File(caminho).existsSync()) {
         try {
-          _player ??= AudioPlayer();
-          await _player?.setReleaseMode(ReleaseMode.stop);
+          if (_player == null) {
+            final p = AudioPlayer();
+            await p.setReleaseMode(ReleaseMode.stop);
+            try {
+              await p.setAudioContext(audioContextConfig);
+            } catch (_) {}
+            _player = p;
+          }
           if (requestGeneration != _playbackGeneration || !_isAppForeground) {
             return;
           }
@@ -384,6 +511,10 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
         } catch (_) {
           if (requestGeneration != _playbackGeneration) return;
           _isPlaying = false;
+          try {
+            await _player?.dispose();
+          } catch (_) {}
+          _player = null;
           if (_isAppForeground) {
             unawaited(SystemSound.play(SystemSoundType.alert));
           }
@@ -396,12 +527,18 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
     }
 
     try {
-      _player ??= AudioPlayer();
-      await _player?.setReleaseMode(ReleaseMode.stop);
+      if (_player == null) {
+        final p = AudioPlayer();
+        await p.setReleaseMode(ReleaseMode.stop);
+        try {
+          await p.setAudioContext(audioContextConfig);
+        } catch (_) {}
+        _player = p;
+      }
       if (requestGeneration != _playbackGeneration || !_isAppForeground) return;
       _isPlaying = true;
-      final wavBytes = _generateWavBytes(soundId);
-      await _player?.play(BytesSource(wavBytes));
+      final filePath = await _obterCaminhoDoArquivoWav(soundId);
+      await _player?.play(DeviceFileSource(filePath));
       if (!_isAppForeground) {
         await _player?.stop();
         return;
@@ -413,10 +550,34 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
     } catch (_) {
       if (requestGeneration != _playbackGeneration) return;
       _isPlaying = false;
+      try {
+        await _player?.dispose();
+      } catch (_) {}
+      _player = null;
       if (_isAppForeground) {
         unawaited(SystemSound.play(SystemSoundType.alert));
       }
     }
+  }
+
+  Future<String> _obterCaminhoDoArquivoWav(String soundId) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File(p.join(tempDir.path, 'offline_gym_sound_$soundId.wav'));
+    if (!file.existsSync() || file.lengthSync() == 0) {
+      final wavBytes = _generateWavBytes(soundId);
+      await file.writeAsBytes(wavBytes, flush: true);
+    }
+    return file.path;
+  }
+
+  Future<String> _obterCaminhoDoTickWav() async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File(p.join(tempDir.path, 'offline_gym_tick_beep.wav'));
+    if (!file.existsSync() || file.lengthSync() == 0) {
+      _cachedTickWav ??= _buildShortTickBeep(22050);
+      await file.writeAsBytes(_cachedTickWav!, flush: true);
+    }
+    return file.path;
   }
 
   Uint8List _generateWavBytes(String soundId) {
@@ -432,12 +593,26 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
           return _buildSoftBeep(sampleRate);
         case 'boxing_gong':
           return _buildBoxingGong(sampleRate);
+        case 'boxing_gong_double':
+          return _buildBoxingGongDouble(sampleRate);
         case 'whistle':
           return _buildWhistle(sampleRate);
+        case 'whistle_triple':
+          return _buildWhistleTriple(sampleRate);
+        case 'air_horn':
+          return _buildAirHorn(sampleRate);
         case 'countdown':
           return _buildCountdown(sampleRate);
         case 'pulse':
           return _buildPulse(sampleRate);
+        case 'laser_synth':
+          return _buildLaserSynth(sampleRate);
+        case 'arcade_powerup':
+          return _buildArcadePowerup(sampleRate);
+        case 'sonar_ping':
+          return _buildSonarPing(sampleRate);
+        case 'electro_drop':
+          return _buildElectroDrop(sampleRate);
         case 'digital':
         default:
           return _buildDigitalBeep(sampleRate);
@@ -672,6 +847,154 @@ class ServicoDeSomDoAlarme with WidgetsBindingObserver {
       }
     }
 
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildBoxingGongDouble(int sampleRate) {
+    final samples = <double>[];
+    const duracaoHit = 0.85;
+    final samplesHit = (duracaoHit * sampleRate).round();
+
+    for (var hit = 0; hit < 2; hit++) {
+      for (var i = 0; i < samplesHit; i++) {
+        final t = i / sampleRate;
+        final env = math.exp(-2.8 * t);
+        final val = (math.sin(2 * math.pi * 260.0 * t) * 0.5 +
+                math.sin(2 * math.pi * 520.0 * t) * 0.3 +
+                math.sin(2 * math.pi * 780.0 * t) * 0.15 +
+                math.sin(2 * math.pi * 1040.0 * t) * 0.05) *
+            env *
+            0.85;
+        samples.add(val.clamp(-1.0, 1.0));
+      }
+      if (hit == 0) {
+        final pauseSamples = (0.12 * sampleRate).round();
+        for (var p = 0; p < pauseSamples; p++) {
+          samples.add(0.0);
+        }
+      }
+    }
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildWhistleTriple(int sampleRate) {
+    final samples = <double>[];
+    const duracaoBurst = 0.14;
+    const pausa = 0.07;
+    final bSamples = (duracaoBurst * sampleRate).round();
+    final pSamples = (pausa * sampleRate).round();
+
+    for (var b = 0; b < 3; b++) {
+      for (var i = 0; i < bSamples; i++) {
+        final t = i / sampleRate;
+        final progress = i / bSamples;
+        final env = progress < 0.15
+            ? (progress / 0.15)
+            : (progress > 0.85 ? (1.0 - progress) / 0.15 : 1.0);
+        final tremolo = 1.0 + 0.15 * math.sin(2 * math.pi * 32.0 * t);
+        final val = (math.sin(2 * math.pi * 2550.0 * t) * 0.6 +
+                math.sin(2 * math.pi * 2700.0 * t) * 0.4) *
+            env *
+            tremolo *
+            0.65;
+        samples.add(val.clamp(-1.0, 1.0));
+      }
+      if (b < 2) {
+        for (var p = 0; p < pSamples; p++) {
+          samples.add(0.0);
+        }
+      }
+    }
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildAirHorn(int sampleRate) {
+    final samples = <double>[];
+    const duracao = 0.65;
+    final totalSamples = (duracao * sampleRate).round();
+
+    for (var i = 0; i < totalSamples; i++) {
+      final t = i / sampleRate;
+      final progress = i / totalSamples;
+      final env = progress < 0.08
+          ? (progress / 0.08)
+          : (progress > 0.8 ? (1.0 - progress) / 0.2 : 1.0);
+      final val = (math.sin(2 * math.pi * 470.0 * t) * 0.5 +
+              math.sin(2 * math.pi * 375.0 * t) * 0.4 +
+              math.sin(2 * math.pi * 940.0 * t) * 0.2) *
+          env *
+          0.7;
+      samples.add(val.clamp(-1.0, 1.0));
+    }
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildLaserSynth(int sampleRate) {
+    final samples = <double>[];
+    const duracao = 0.38;
+    final totalSamples = (duracao * sampleRate).round();
+
+    for (var i = 0; i < totalSamples; i++) {
+      final progress = i / totalSamples;
+      final freq = 2800.0 * math.pow(0.12, progress);
+      final t = i / sampleRate;
+      final env = 1.0 - progress;
+      final val = math.sin(2 * math.pi * freq * t) * env * 0.75;
+      samples.add(val.clamp(-1.0, 1.0));
+    }
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildArcadePowerup(int sampleRate) {
+    final samples = <double>[];
+    const notas = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+    const duracaoNota = 0.07;
+    final samplesNota = (duracaoNota * sampleRate).round();
+
+    for (final freq in notas) {
+      for (var i = 0; i < samplesNota; i++) {
+        final t = i / sampleRate;
+        final env = 1.0 - (i / samplesNota) * 0.3;
+        final sinVal = math.sin(2 * math.pi * freq * t);
+        final squareVal = sinVal >= 0 ? 0.75 : -0.75;
+        final val = squareVal * env * 0.55;
+        samples.add(val.clamp(-1.0, 1.0));
+      }
+    }
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildSonarPing(int sampleRate) {
+    final samples = <double>[];
+    const duracao = 1.35;
+    final totalSamples = (duracao * sampleRate).round();
+    const freq = 1150.0;
+
+    for (var i = 0; i < totalSamples; i++) {
+      final t = i / sampleRate;
+      final env = math.exp(-3.2 * t);
+      final val = (math.sin(2 * math.pi * freq * t) * 0.8 +
+              math.sin(2 * math.pi * (freq * 2) * t) * 0.2) *
+          env *
+          0.8;
+      samples.add(val.clamp(-1.0, 1.0));
+    }
+    return _pcmToWav(samples, sampleRate);
+  }
+
+  Uint8List _buildElectroDrop(int sampleRate) {
+    final samples = <double>[];
+    const duracao = 0.55;
+    final totalSamples = (duracao * sampleRate).round();
+
+    for (var i = 0; i < totalSamples; i++) {
+      final t = i / sampleRate;
+      final progress = i / totalSamples;
+      final freq = 180.0 * math.exp(-3.5 * progress) + 40.0;
+      final env = math.exp(-2.8 * t);
+      final val = math.sin(2 * math.pi * freq * t) * env * 0.9;
+      samples.add(val.clamp(-1.0, 1.0));
+    }
     return _pcmToWav(samples, sampleRate);
   }
 

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../banco_dados/banco_de_dados.dart';
@@ -15,8 +17,12 @@ import '../modelos/plano_de_treino.dart';
 import '../servicos/som_do_alarme.dart';
 import '../servicos/notificacoes_de_treino.dart';
 
-class ProvedorDeTreino extends ChangeNotifier {
-  ProvedorDeTreino(this._bancoDeDados);
+class ProvedorDeTreino extends ChangeNotifier with WidgetsBindingObserver {
+  ProvedorDeTreino(this._bancoDeDados) {
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (_) {}
+  }
 
   final BancoDeDados _bancoDeDados;
 
@@ -67,6 +73,21 @@ class ProvedorDeTreino extends ChangeNotifier {
   bool _cronometroFinalizado = false;
   DateTime? _fimDoCronometro;
   Timer? _cronometroDeDescanso;
+  int _idExecucaoDescansoAtual = 0;
+  ResultadoAgendamentoDescanso? _ultimoResultadoAgendamento;
+
+  @visibleForTesting
+  bool? mockIsAppForeground;
+
+  @visibleForTesting
+  DateTime Function()? relogioParaTestes;
+
+  @visibleForTesting
+  Timer Function(Duration duration, void Function(Timer timer) callback)?
+      criadorDeTimerParaTestes;
+
+  DateTime get _agora =>
+      relogioParaTestes != null ? relogioParaTestes!() : DateTime.now();
 
   final Set<String> _chavesDasSeriesConcluidas = <String>{};
   final Map<String, double> _cargasDasSeries = <String, double>{};
@@ -215,8 +236,21 @@ class ProvedorDeTreino extends ChangeNotifier {
     }).toList(growable: false);
   }
 
+  DiagnosticoDoCoach? _diagnosticoDoCoachCache;
+
+  /// Invalida o cache do diagnóstico do Coach Científico para forçar novo cálculo.
+  void invalidarCacheCoach() {
+    _diagnosticoDoCoachCache = null;
+  }
+
   /// Retorna o diagnóstico fisiológico completo sintetizado pelo Coach Científico Offline.
-  Future<DiagnosticoDoCoach> obterDiagnosticoDoCoach({int dias = 7}) async {
+  Future<DiagnosticoDoCoach> obterDiagnosticoDoCoach({
+    int dias = 7,
+    bool forcarRecalculo = false,
+  }) async {
+    if (!forcarRecalculo && _diagnosticoDoCoachCache != null && dias == 7) {
+      return _diagnosticoDoCoachCache!;
+    }
     final volumes = await obterVolumeSemanalPorMusculo(dias: dias);
     final ultimasSessoes =
         await _bancoDeDados.obterUltimaDataPorExercicioConcluido();
@@ -235,14 +269,26 @@ class ProvedorDeTreino extends ChangeNotifier {
       }
     }
 
-    return CoachCientificoOffline.analisarTreinamento(
+    final seriesRecentes =
+        await _bancoDeDados.obterSeriesConcluidasNosUltimosDias(30);
+    final platos = CoachCientificoOffline.detectarPlatos(seriesRecentes);
+
+    final resultado = CoachCientificoOffline.analisarTreinamento(
       perfil: _perfil,
       volumeSemanal: volumes,
       historico: _historico,
       diasOfensiva: ofensivaAtual,
       pesoAtualKg: pesoCorporalAtualKg,
       ultimosTreinosPorGrupo: ultimosTreinosPorGrupo,
+      exerciciosPlanejados: todosOsExerciciosPlanejadosNaSemana,
+      prontidaoHoje: _prontidaoHoje,
+      platosDetectados: platos,
     );
+
+    if (dias == 7) {
+      _diagnosticoDoCoachCache = resultado;
+    }
+    return resultado;
   }
 
   /// Quantidade de escudos de ofensiva disponíveis (ganha 1 a cada 4 dias de treino + 1 inicial).
@@ -277,6 +323,81 @@ class ProvedorDeTreino extends ChangeNotifier {
   ValueListenable<int> get tempoRestanteDescansoListenable =>
       _tempoRestanteDescansoNotifier;
   bool get cronometroConcluido => _cronometroFinalizado;
+  int get idExecucaoDescansoAtual => _idExecucaoDescansoAtual;
+  ResultadoAgendamentoDescanso? get ultimoResultadoAgendamento =>
+      _ultimoResultadoAgendamento;
+  StatusPermissaoNotificacao get statusPermissaoNotificacao =>
+      ServicoDeNotificacoesDeTreino.instance.statusPermissaoNotificacao;
+  Future<CapacidadeAlarmeExato> verificarCapacidadeAlarmeExato() =>
+      ServicoDeNotificacoesDeTreino.instance.verificarCapacidadeAlarmeExato();
+
+  bool get isAppForeground {
+    if (mockIsAppForeground != null) return mockIsAppForeground!;
+    try {
+      final state = WidgetsBinding.instance.lifecycleState;
+      return state == null || state == AppLifecycleState.resumed;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(aoRetornarParaPrimeiroPlano());
+    }
+  }
+
+  Future<void> aoRetornarParaPrimeiroPlano() async {
+    final execucao = _idExecucaoDescansoAtual;
+    // Antes de qualquer await, impede ticks de reproduzirem áudio retroativo.
+    final endsAt = _fimDoCronometro;
+    final now = _agora;
+    if (endsAt != null && !endsAt.isAfter(now)) {
+      // O descanso terminou enquanto o app estava em segundo plano / tela bloqueada.
+      // Preserva o aviso nativo; não há confirmação de entrega pelo sistema.
+      _cronometroDeDescanso?.cancel();
+      _cronometroDeDescanso = null;
+      _tempoRestanteDoCronometro = 0;
+      _tempoRestanteDescansoNotifier.value = 0;
+      _cronometroFinalizado = true;
+      _fimDoCronometro = null;
+      if (_sessaoAtiva) {
+        unawaited(
+          _bancoDeDados.atualizarDescansoDoTreinoEmAndamento(
+            descansoSegundos: _duracaoTotalDoCronometro,
+            descansoAteISO: null,
+            idExercicioDescanso: _idExercicioComCronometroAtivo,
+          ),
+        );
+      }
+      notifyListeners();
+    } else if (endsAt != null) {
+      final diffMs = endsAt.difference(now).inMilliseconds;
+      final remaining =
+          (diffMs / 1000).ceil().clamp(0, _duracaoTotalDoCronometro).toInt();
+      _tempoRestanteDoCronometro = remaining;
+      _tempoRestanteDescansoNotifier.value = remaining;
+      notifyListeners();
+    }
+
+    final notificacoes = ServicoDeNotificacoesDeTreino.instance;
+    if (notificacoes.temLimpezaPendente) {
+      await notificacoes.tentarRecuperarCancelamentoPendente();
+      if (execucao != _idExecucaoDescansoAtual) return;
+    }
+    await notificacoes.atualizarStatusPermissaoSilenciosamente();
+    if (execucao != _idExecucaoDescansoAtual) return;
+    if (_idExercicioComCronometroAtivo == null || _cronometroFinalizado) return;
+    final estadoCanal = await notificacoes.verificarEstadoDoCanalDescanso();
+    if (execucao != _idExecucaoDescansoAtual || _cronometroFinalizado) return;
+    if (estadoCanal != null) {
+      _ultimoResultadoAgendamento = estadoCanal;
+      notifyListeners();
+    }
+    // Autorização concedida não comprova que um descanso antes bloqueado foi
+    // agendado. Não apaga o aviso técnico nem inventa sucesso de agendamento.
+  }
 
   bool cronometroEstaAtivoPara(int idDoExercicio) =>
       _idExercicioComCronometroAtivo == idDoExercicio &&
@@ -311,6 +432,20 @@ class ProvedorDeTreino extends ChangeNotifier {
         diaSemana,
       ).expand((rotina) => rotina.exercicios).toList(growable: false);
 
+  /// Retorna todos os exercícios planejados ativos da semana (de segunda a domingo).
+  List<ExercicioPlanejado> get todosOsExerciciosPlanejadosNaSemana {
+    final todos = <ExercicioPlanejado>[];
+    for (int dia = 1; dia <= 7; dia++) {
+      final selecionados = exerciciosSelecionadosDoDia(dia);
+      if (selecionados.isNotEmpty) {
+        todos.addAll(selecionados);
+      } else {
+        todos.addAll(planosDoDia(dia));
+      }
+    }
+    return List<ExercicioPlanejado>.unmodifiable(todos);
+  }
+
   Future<void> inicializar() async {
     if (_inicializado || _estaInicializando) return;
     _estaInicializando = true;
@@ -322,6 +457,7 @@ class ProvedorDeTreino extends ChangeNotifier {
         ServicoDeNotificacoesDeTreino.instance.inicializar().catchError((_) {}),
         _carregarDesafioFotoMensalAdiado(),
         _carregarEscudosDeOfensiva(),
+        _carregarProntidaoDeHoje(),
       ]);
       _perfil = await _bancoDeDados.obterPerfilDoUsuario();
       await Future.wait(<Future<void>>[
@@ -339,6 +475,49 @@ class ProvedorDeTreino extends ChangeNotifier {
       _estaInicializando = false;
       notifyListeners();
     }
+  }
+
+  RegistroDeProntidaoDiaria? _prontidaoHoje;
+  RegistroDeProntidaoDiaria? get prontidaoHoje => _prontidaoHoje;
+
+  Future<void> _carregarProntidaoDeHoje() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hoje = DateTime.now();
+      final chave = 'prontidao_${hoje.year}_${hoje.month}_${hoje.day}';
+      final jsonStr = prefs.getString(chave);
+      if (jsonStr != null) {
+        final map = jsonDecode(jsonStr) as Map<String, Object?>;
+        _prontidaoHoje = RegistroDeProntidaoDiaria.deMapa(map);
+      } else {
+        _prontidaoHoje = null;
+      }
+    } catch (_) {
+      _prontidaoHoje = null;
+    }
+  }
+
+  Future<void> salvarProntidaoDeHoje({
+    required int energia,
+    required int sono,
+    required int dorArticular,
+    String? articulacaoComDor,
+  }) async {
+    final registro = RegistroDeProntidaoDiaria(
+      energia: energia,
+      sono: sono,
+      dorArticular: dorArticular,
+      articulacaoComDor: articulacaoComDor,
+    );
+    _prontidaoHoje = registro;
+    notifyListeners();
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final hoje = DateTime.now();
+      final chave = 'prontidao_${hoje.year}_${hoje.month}_${hoje.day}';
+      await prefs.setString(chave, jsonEncode(registro.paraMapa()));
+    } catch (_) {}
   }
 
   Future<void> _carregarEscudosDeOfensiva() async {
@@ -413,6 +592,7 @@ class ProvedorDeTreino extends ChangeNotifier {
       _planosPorDia.putIfAbsent(diaSemana, () => <ExercicioPlanejado>[]);
     }
     if (notify) notifyListeners();
+    _diagnosticoDoCoachCache = null;
   }
 
   Future<void> salvarRotinaDeTreino(RotinaDeTreino rotina) async {
@@ -589,6 +769,7 @@ class ProvedorDeTreino extends ChangeNotifier {
       _detalhesDaEvolucao = <DetalheEvolucaoDoExercicio>[];
     }
     if (notify) notifyListeners();
+    _diagnosticoDoCoachCache = null;
   }
 
   Future<List<SerieDoTreino>> obterSeriesDoTreino(int idDoTreino) =>
@@ -704,6 +885,7 @@ class ProvedorDeTreino extends ChangeNotifier {
     _habitos = resultados[0] as List<Habito>;
     _contagemHabitosPorData = resultados[1] as Map<String, int>;
     if (notify) notifyListeners();
+    _diagnosticoDoCoachCache = null;
   }
 
   Future<void> recarregarHabitos() => _recarregarHabitos();
@@ -763,6 +945,7 @@ class ProvedorDeTreino extends ChangeNotifier {
   Future<void> _recarregarTarefas({bool notify = true}) async {
     _tarefas = await _bancoDeDados.obterTarefasToDo();
     if (notify) notifyListeners();
+    _diagnosticoDoCoachCache = null;
   }
 
   Future<void> recarregarTarefas() => _recarregarTarefas();
@@ -844,6 +1027,9 @@ class ProvedorDeTreino extends ChangeNotifier {
     int? customSeconds,
     DateTime? endsAt,
   }) {
+    _idExecucaoDescansoAtual++;
+    final idExecucao = _idExecucaoDescansoAtual;
+
     _cronometroDeDescanso?.cancel();
     final total = customSeconds ??
         (exercicio.tempoDescansoSegundos > 0
@@ -851,12 +1037,29 @@ class ProvedorDeTreino extends ChangeNotifier {
             : 60);
     _idExercicioComCronometroAtivo = exercicio.id;
     _duracaoTotalDoCronometro = total;
-    final now = DateTime.now();
-    _fimDoCronometro = endsAt ?? now.add(Duration(seconds: total));
+    final now = _agora;
+    final ends = endsAt ?? now.add(Duration(seconds: total));
+    _fimDoCronometro = ends;
+
+    // 1. Antes de qualquer agendamento, exija horarioTermino.isAfter(agora).
+    // Prazo igual ou anterior ao atual deve ser descartado.
+    if (!ends.isAfter(now)) {
+      unawaited(ServicoDeNotificacoesDeTreino.instance
+          .cancelarNotificacaoDescanso(idExecucao: idExecucao));
+      _fimDoCronometro = null;
+      _tempoRestanteDoCronometro = 0;
+      _tempoRestanteDescansoNotifier.value = 0;
+      _cronometroFinalizado = true;
+      notifyListeners();
+      return;
+    }
+
+    final diffMs = ends.difference(now).inMilliseconds;
     _tempoRestanteDoCronometro =
-        _fimDoCronometro!.difference(now).inSeconds.clamp(0, total).toInt();
+        (diffMs / 1000).ceil().clamp(0, total).toInt();
     _tempoRestanteDescansoNotifier.value = _tempoRestanteDoCronometro;
     _cronometroFinalizado = false;
+    _ultimoResultadoAgendamento = null;
 
     if (_sessaoAtiva) {
       unawaited(
@@ -867,37 +1070,81 @@ class ProvedorDeTreino extends ChangeNotifier {
         ),
       );
     }
+
+    unawaited(
+      ServicoDeNotificacoesDeTreino.instance
+          .agendarNotificacaoDescanso(
+            idExecucao: idExecucao,
+            nomeExercicio: exercicio.nome,
+            horarioTermino: _fimDoCronometro!,
+          )
+          .then((resultado) {
+        final now = _agora;
+        final aindaValido = idExecucao == _idExecucaoDescansoAtual &&
+            _idExercicioComCronometroAtivo != null &&
+            !_cronometroFinalizado &&
+            _fimDoCronometro != null &&
+            _fimDoCronometro!.isAfter(now);
+        if (aindaValido) {
+          _ultimoResultadoAgendamento = resultado;
+          notifyListeners();
+        }
+      }),
+    );
     notifyListeners();
 
     var ultimoBipRestante = -1;
-    _cronometroDeDescanso = Timer.periodic(const Duration(seconds: 1), (timer) {
+    final criador = criadorDeTimerParaTestes ?? Timer.periodic;
+    _cronometroDeDescanso = criador(const Duration(seconds: 1), (timer) {
       final endsAt = _fimDoCronometro;
       if (endsAt == null) {
         timer.cancel();
         return;
       }
-      final remaining = endsAt
-          .difference(DateTime.now())
-          .inSeconds
-          .clamp(0, _duracaoTotalDoCronometro + 1)
-          .toInt();
-      _tempoRestanteDoCronometro = remaining;
-      _tempoRestanteDescansoNotifier.value = remaining;
+      final agora = _agora;
+      final expirou = agora.isAfter(endsAt) || agora.isAtSameMomentAs(endsAt);
+      final diffMs = endsAt.difference(agora).inMilliseconds;
+      final remaining =
+          (diffMs / 1000).ceil().clamp(0, _duracaoTotalDoCronometro + 1).toInt();
+      _tempoRestanteDoCronometro = expirou ? 0 : remaining;
+      _tempoRestanteDescansoNotifier.value = _tempoRestanteDoCronometro;
 
-      // Bip sonoro e feedback tátil nos últimos 3 segundos (3, 2, 1)
-      if (remaining > 0 && remaining <= 3 && ultimoBipRestante != remaining) {
+      // Bip sonoro e feedback tátil nos últimos 3 segundos (3, 2, 1) em primeiro plano
+      if (!expirou &&
+          remaining > 0 &&
+          remaining <= 3 &&
+          ultimoBipRestante != remaining) {
         ultimoBipRestante = remaining;
-        ServicoDeSomDoAlarme.instance.tocarBipContagemRegressiva();
+        if (isAppForeground) {
+          ServicoDeSomDoAlarme.instance.tocarBipContagemRegressiva();
+        }
       }
 
-      if (remaining <= 0) {
+      if (expirou) {
         timer.cancel();
         _cronometroDeDescanso = null;
         _tempoRestanteDoCronometro = 0;
         _tempoRestanteDescansoNotifier.value = 0;
         _cronometroFinalizado = true;
         _fimDoCronometro = null;
-        ServicoDeSomDoAlarme.instance.tocarAlarme();
+
+        if (isAppForeground) {
+          // Em primeiro plano:
+          // 1. Invalida imediatamente a identificação da execução
+          _idExecucaoDescansoAtual++;
+          final idExecucaoConclusao = _idExecucaoDescansoAtual;
+          // 2. Cancela o alarme nativo para não duplicar aviso
+          unawaited(
+            ServicoDeNotificacoesDeTreino.instance
+                .cancelarNotificacaoDescanso(idExecucao: idExecucaoConclusao),
+          );
+          // 3. Toca áudio interno com ducking
+          ServicoDeSomDoAlarme.instance.tocarAlarme();
+        } else {
+          // Em segundo plano / tela bloqueada: NÃO cancela o aviso nativo agendado!
+          // Deixa o AlarmManager do sistema disparar o alerta sonoro pelo canal nativo.
+        }
+
         if (_sessaoAtiva) {
           unawaited(
             _bancoDeDados.atualizarDescansoDoTreinoEmAndamento(
@@ -913,6 +1160,9 @@ class ProvedorDeTreino extends ChangeNotifier {
   }
 
   void cancelarCronometroDeDescanso() {
+    _idExecucaoDescansoAtual++;
+    final idExecucao = _idExecucaoDescansoAtual;
+
     _cronometroDeDescanso?.cancel();
     _cronometroDeDescanso = null;
     _idExercicioComCronometroAtivo = null;
@@ -920,6 +1170,12 @@ class ProvedorDeTreino extends ChangeNotifier {
     _tempoRestanteDescansoNotifier.value = 0;
     _cronometroFinalizado = false;
     _fimDoCronometro = null;
+    _ultimoResultadoAgendamento = null;
+
+    unawaited(
+      ServicoDeNotificacoesDeTreino.instance
+          .cancelarNotificacaoDescanso(idExecucao: idExecucao),
+    );
     if (_sessaoAtiva) {
       unawaited(
         _bancoDeDados.atualizarDescansoDoTreinoEmAndamento(
@@ -1692,6 +1948,8 @@ class ProvedorDeTreino extends ChangeNotifier {
       sets: completedSets,
     );
 
+    _idExecucaoDescansoAtual++;
+    final idExecucaoDescanso = _idExecucaoDescansoAtual;
     _cronometroDaSessao?.cancel();
     _cronometroDaSessao = null;
     _cronometroDeDescanso?.cancel();
@@ -1700,6 +1958,12 @@ class ProvedorDeTreino extends ChangeNotifier {
     _tempoRestanteDoCronometro = 0;
     _tempoRestanteDescansoNotifier.value = 0;
     _cronometroFinalizado = false;
+    _fimDoCronometro = null;
+    _ultimoResultadoAgendamento = null;
+    unawaited(
+      ServicoDeNotificacoesDeTreino.instance
+          .cancelarNotificacaoDescanso(idExecucao: idExecucaoDescanso),
+    );
     _sessaoAtiva = false;
     _diaDaSessao = null;
     _inicioDaSessao = null;
@@ -1735,6 +1999,9 @@ class ProvedorDeTreino extends ChangeNotifier {
 
   @override
   void dispose() {
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
     _cronometroDaSessao?.cancel();
     _cronometroDeDescanso?.cancel();
     _duracaoDaSessaoNotifier.dispose();

@@ -1,11 +1,19 @@
+import 'package:provider/provider.dart';
+import 'package:offline_gym/componentes/card_coach_fisiologico.dart';
 import 'package:offline_gym/dominio/volume_muscular.dart';
 import 'package:offline_gym/dominio/calculadora_de_cargas.dart';
 import 'package:offline_gym/dominio/calculadora_nutricional.dart';
 import 'package:offline_gym/dominio/coach_cientifico.dart';
 import 'package:offline_gym/provedores/estado_tema.dart';
+import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:offline_gym/banco_dados/banco_de_dados.dart';
+import 'package:offline_gym/provedores/estado_treino.dart';
 import 'package:offline_gym/dominio/catalogo_exercicios_offline.dart';
 import 'package:offline_gym/dominio/regras_de_ofensiva.dart';
 import 'package:offline_gym/dominio/sistema_gamificacao.dart';
@@ -13,6 +21,8 @@ import 'package:offline_gym/modelos/habito.dart';
 import 'package:offline_gym/modelos/plano_de_treino.dart';
 import 'package:offline_gym/servicos/backup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:offline_gym/servicos/notificacoes_de_treino.dart';
 import 'package:offline_gym/servicos/som_do_alarme.dart';
 import 'package:offline_gym/servicos/criptografia_de_backup.dart';
 
@@ -872,7 +882,7 @@ void main() {
       );
 
       expect(
-        diag.pareceres.any((p) => p.titulo.contains('Relação I:Q')),
+        diag.pareceres.any((p) => p.titulo.contains('Relação Posterior vs Quadríceps')),
         isTrue,
       );
     });
@@ -1134,5 +1144,947 @@ void main() {
         expect(todasAtualizadas.cargaDaSerie(i), 90.0);
       }
     });
+
+    test('configura AudioContext com ducking para não interromper músicas em segundo plano', () {
+      final config = ServicoDeSomDoAlarme.audioContextConfig;
+      expect(config.android.audioFocus, AndroidAudioFocus.gainTransientMayDuck);
+      expect(config.android.usageType, AndroidUsageType.assistanceSonification);
+      expect(config.iOS.category, AVAudioSessionCategory.playback);
+      expect(config.iOS.options.contains(AVAudioSessionOptions.duckOthers), isTrue);
+      expect(config.iOS.options.contains(AVAudioSessionOptions.mixWithOthers), isTrue);
+    });
+
+    test('ServicoDeNotificacoesDeTreino instancia e cancelamento de descanso não lançam exceção', () async {
+      final servico = ServicoDeNotificacoesDeTreino.instance;
+      expect(servico, isNotNull);
+      // Cancelar notificação inexistente ou pendente não deve lançar erro
+      await expectLater(servico.cancelarNotificacaoDescanso(idExecucao: 1), completes);
+    });
+
+    test('CoachCientificoOffline utiliza termos biomecânicos em vez de alegações médicas de cura/prevenção', () {
+      final janelas = CoachCientificoOffline.tempoBaseRecuperacaoHoras;
+      expect(janelas, isNotEmpty);
+      expect(janelas.containsKey('Peito'), isTrue);
+    });
+
+    test('ProvedorDeTema possui 11 estilos neon, Cyber Neon Ciano (#00E5FF) e Color Picker customizado', () async {
+      final provedor = ProvedorDeTema();
+      expect(ProvedorDeTema.estilosDisponiveis.length, greaterThanOrEqualTo(11));
+
+      final ciano = ProvedorDeTema.estilosDisponiveis.firstWhere((e) => e.id == 'ciano');
+      expect(ciano.primaria, const Color(0xFF00E5FF));
+
+      await provedor.definirCorCustomizada(const Color(0xFFCCFF00));
+      expect(provedor.isCustomizado, isTrue);
+      expect(provedor.estiloAtual.primaria, const Color(0xFFCCFF00));
+    });
+
+    test('ServicoDeSomDoAlarme possui 17 opções incluindo novos esportivos e sintetizadores neon', () {
+      expect(ServicoDeSomDoAlarme.sonsDisponiveis.length, greaterThanOrEqualTo(17));
+      final ids = ServicoDeSomDoAlarme.sonsDisponiveis.map((s) => s.id).toSet();
+      expect(ids.contains('boxing_gong_double'), isTrue);
+      expect(ids.contains('whistle_triple'), isTrue);
+      expect(ids.contains('air_horn'), isTrue);
+      expect(ids.contains('laser_synth'), isTrue);
+      expect(ids.contains('arcade_powerup'), isTrue);
+      expect(ids.contains('sonar_ping'), isTrue);
+      expect(ids.contains('electro_drop'), isTrue);
+    });
+    test('Escala Fisiológica do Coach: 100% Verde, 50% Laranja, 0% Vermelho e Fadiga Invertida', () {
+      const verde = Color(0xFF00E676);
+      const laranja = Color(0xFFFF9100);
+      const vermelho = Color(0xFFFF1744);
+
+      // Simetria e Recuperação Muscular
+      expect(obterCorFisiologica(percentual: 100, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho), verde);
+      expect(obterCorFisiologica(percentual: 85, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho), verde);
+      expect(obterCorFisiologica(percentual: 50, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho), laranja);
+      expect(obterCorFisiologica(percentual: 0, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho), vermelho);
+      expect(obterCorFisiologica(percentual: 20, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho), vermelho);
+
+      // Fadiga Acumulada (Invertida: 0% verde, 50% laranja, 100% vermelho)
+      expect(obterCorFisiologica(percentual: 0, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho, invertido: true), verde);
+      expect(obterCorFisiologica(percentual: 25, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho, invertido: true), verde);
+      expect(obterCorFisiologica(percentual: 50, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho, invertido: true), laranja);
+      expect(obterCorFisiologica(percentual: 85, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho, invertido: true), vermelho);
+      expect(obterCorFisiologica(percentual: 100, corSucesso: verde, corAlerta: laranja, corPerigo: vermelho, invertido: true), vermelho);
+    });
+
+    test('CoachCientificoOffline analisa plano de treino: sobrecarga diária e grupos ausentes', () {
+      const perfil = PerfilDoUsuario(nome: 'Thierry', objetivoPrincipal: 'Hipertrofia');
+
+      // Plano com sobrecarga na segunda (> 24 séries) e sem grupo de ombros
+      final plano = <ExercicioPlanejado>[
+        const ExercicioPlanejado(diaSemana: 1, nome: 'Supino Reto', carga: 80, series: 10, repeticoes: 10),
+        const ExercicioPlanejado(diaSemana: 1, nome: 'Crucifixo Reto', carga: 20, series: 10, repeticoes: 12),
+        const ExercicioPlanejado(diaSemana: 1, nome: 'Tríceps Corda', carga: 30, series: 6, repeticoes: 12), // Total 26 séries na segunda
+        const ExercicioPlanejado(diaSemana: 2, nome: 'Puxada Frontal', carga: 70, series: 4, repeticoes: 10),
+        const ExercicioPlanejado(diaSemana: 3, nome: 'Agachamento Livre', carga: 100, series: 4, repeticoes: 8),
+        const ExercicioPlanejado(diaSemana: 4, nome: 'Stiff', carga: 80, series: 4, repeticoes: 10),
+      ];
+
+      final diag = CoachCientificoOffline.analisarTreinamento(
+        perfil: perfil,
+        volumeSemanal: const <MarcoDeVolumeMuscular>[],
+        historico: const <TreinoDoHistorico>[],
+        diasOfensiva: 2,
+        exerciciosPlanejados: plano,
+      );
+
+      // Deve detectar volume diário excessivo na segunda-feira (> 24 séries)
+      expect(diag.pareceres.any((p) => p.titulo.contains('Volume Excessivo no Plano')), isTrue);
+
+      // Deve alertar sobre grupo ausente no plano (Ombros)
+      expect(diag.pareceres.any((p) => p.titulo.contains('Grupo Ausente no Plano') && p.mensagem.contains('Ombros')), isTrue);
+    });
+
+    testWidgets('CardCoachFisiologico expande pareceres biomecânicos sem erros de borderRadius', (tester) async {
+      const pareceres = <ParecerDoCoach>[
+        ParecerDoCoach(
+          titulo: 'Equilíbrio Muscular',
+          mensagem: 'Proporção adequada entre Peitoral e Costas.',
+          tipo: TipoDeParecer.sucesso,
+          recomendacaoPratica: 'Mantenha o volume semanal atual.',
+        ),
+        ParecerDoCoach(
+          titulo: 'Alerta de Volume',
+          mensagem: 'Volume elevado para quadríceps.',
+          tipo: TipoDeParecer.alertaFisiologico,
+          recomendacaoPratica: 'Reduza 2 séries.',
+        ),
+      ];
+
+      const diag = DiagnosticoDoCoach(
+        saudacaoPersonalizada: 'Coach · Atleta',
+        indiceEquilibrioPercentual: 88,
+        indiceFadigaPercentual: 30,
+        semanaSugeridaDeload: false,
+        pareceres: pareceres,
+        resumoGeral: 'Ótimo equilíbrio.',
+      );
+
+      final provedorTema = ProvedorDeTema();
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ProvedorDeTema>.value(
+          value: provedorTema,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: CardCoachFisiologico(diagnostico: diag),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Ver 2 pareceres biomecânicos'), findsOneWidget);
+
+      // Toca para expandir as sugestões
+      await tester.tap(find.text('Ver 2 pareceres biomecânicos'));
+      await tester.pumpAndSettle();
+
+      // Verifica se os pareceres foram renderizados perfeitamente
+      expect(find.text('Equilíbrio Muscular'), findsOneWidget);
+      expect(find.text('Alerta de Volume'), findsOneWidget);
+      expect(find.text('Dica prática: Mantenha o volume semanal atual.'), findsOneWidget);
+    });
+    test('CoachCientificoOffline.detectarPlatos diferencia series na mesma sessao de sessoes distintas', () {
+      // 1. Multiplas series na MESMA sessao (idHistoricoTreino = 101) com a mesma carga NAO devem disparar plato
+      final seriesMesmaSessao = <SerieDoTreino>[
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 10, idHistoricoTreino: 101),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 2, repeticoes: 10, idHistoricoTreino: 101),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 3, repeticoes: 10, idHistoricoTreino: 101),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 4, repeticoes: 10, idHistoricoTreino: 101),
+      ];
+      final platosMesmaSessao = CoachCientificoOffline.detectarPlatos(seriesMesmaSessao);
+      expect(platosMesmaSessao.isEmpty, isTrue);
+
+      // 2. Tres sessoes distintas (IDs 103, 102, 101 em ordem DESC) com a mesma carga e reps estagnadas DEVEM disparar plato
+      final seriesSessoesDistintasEstagnadas = <SerieDoTreino>[
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 10, idHistoricoTreino: 103),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 10, idHistoricoTreino: 102),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 10, idHistoricoTreino: 101),
+      ];
+      final platosDetectados = CoachCientificoOffline.detectarPlatos(seriesSessoesDistintasEstagnadas);
+      expect(platosDetectados.length, 1);
+      expect(platosDetectados.first.nomeExercicio, 'Supino Reto');
+      expect(platosDetectados.first.cargaKg, 80);
+      expect(platosDetectados.first.sessoesSemEvolucao, 3);
+
+      // 3. Tres sessoes distintas onde na sessao mais recente o usuario aumentou as repeticoes (12 reps vs 10 reps) NAO deve disparar plato
+      final seriesComEvolucaoReps = <SerieDoTreino>[
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 12, idHistoricoTreino: 103),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 10, idHistoricoTreino: 102),
+        const SerieDoTreino(nomeExercicio: 'Supino Reto', cargaUtilizada: 80, serieNumero: 1, repeticoes: 10, idHistoricoTreino: 101),
+      ];
+      final platosComEvolucao = CoachCientificoOffline.detectarPlatos(seriesComEvolucaoReps);
+      expect(platosComEvolucao.isEmpty, isTrue);
+    });
+
+    test('RegistroDeProntidaoDiaria e Biofeedback do Coach orientam o treino offline', () {
+      const prontidao = RegistroDeProntidaoDiaria(
+        energia: 2,
+        sono: 2,
+        dorArticular: 4,
+        articulacaoComDor: 'Ombro Direito',
+      );
+
+      final mapa = prontidao.paraMapa();
+      final restaurada = RegistroDeProntidaoDiaria.deMapa(mapa);
+      expect(restaurada.energia, 2);
+      expect(restaurada.sono, 2);
+      expect(restaurada.dorArticular, 4);
+      expect(restaurada.articulacaoComDor, 'Ombro Direito');
+
+      const perfil = PerfilDoUsuario(nome: 'Atleta Biofeedback', objetivoPrincipal: 'Hipertrofia');
+
+      final diagDor = CoachCientificoOffline.analisarTreinamento(
+        perfil: perfil,
+        volumeSemanal: const <MarcoDeVolumeMuscular>[],
+        historico: const <TreinoDoHistorico>[],
+        diasOfensiva: 1,
+        prontidaoHoje: restaurada,
+      );
+
+      // Deve gerar alerta articular para a articulacao informada
+      expect(diagDor.pareceres.any((p) => p.titulo.contains('Atenção Articular: Ombro Direito')), isTrue);
+
+      // Teste com baixa energia (energia 1, dor 0) -> deve gerar otimizacao recomendando RIR 2-3
+      final diagBaixaEnergia = CoachCientificoOffline.analisarTreinamento(
+        perfil: perfil,
+        volumeSemanal: const <MarcoDeVolumeMuscular>[],
+        historico: const <TreinoDoHistorico>[],
+        diasOfensiva: 1,
+        prontidaoHoje: const RegistroDeProntidaoDiaria(energia: 1, sono: 3, dorArticular: 0),
+      );
+      expect(diagBaixaEnergia.pareceres.any((p) => p.titulo.contains('Prontidão Moderada') && p.recomendacaoPratica!.contains('RIR 2-3')), isTrue);
+
+      // Teste com alta prontidao (energia 5, sono 5, dor 0) -> deve gerar parecer de destaque para sobrecarga progressiva
+      final diagProntidaoMax = CoachCientificoOffline.analisarTreinamento(
+        perfil: perfil,
+        volumeSemanal: const <MarcoDeVolumeMuscular>[],
+        historico: const <TreinoDoHistorico>[],
+        diasOfensiva: 1,
+        prontidaoHoje: const RegistroDeProntidaoDiaria(energia: 5, sono: 5, dorArticular: 0),
+      );
+      expect(diagProntidaoMax.pareceres.any((p) => p.titulo.contains('Prontidão Máxima de Treino')), isTrue);
+    });
+
+    group('Coordenação e Notificações do Cronômetro de Descanso', () {
+      final servico = ServicoDeNotificacoesDeTreino.instance;
+      late AdaptadorSimuladoNotificacoes adaptador;
+      late DateTime fakeTime;
+      var chamadasTocarAlarme = 0;
+
+      setUp(() {
+        servico.resetForTesting();
+        adaptador = AdaptadorSimuladoNotificacoes();
+        servico.definirAdaptadorParaTestes(adaptador);
+        fakeTime = DateTime(2026, 10, 24, 12, 0, 0);
+        servico.relogioParaTestes = () => fakeTime;
+        chamadasTocarAlarme = 0;
+        ServicoDeSomDoAlarme.instance.mockTocarAlarme = () async {
+          chamadasTocarAlarme++;
+        };
+      });
+
+      tearDown(() {
+        servico.resetForTesting();
+        ServicoDeSomDoAlarme.instance.mockTocarAlarme = null;
+      });
+
+      test('descarta agendamento com horário de término no passado ou igual ao atual dentro do serviço', () async {
+        final resultadoPassado = await servico.agendarNotificacaoDescanso(
+          idExecucao: 10,
+          nomeExercicio: 'Supino Reto',
+          horarioTermino: fakeTime.subtract(const Duration(seconds: 5)),
+        );
+        expect(resultadoPassado, ResultadoAgendamentoDescanso.descartadoPorConcorrencia);
+
+        // Prazo exatamente igual ao momento atual também deve ser descartado
+        final resultadoExato = await servico.agendarNotificacaoDescanso(
+          idExecucao: 10,
+          nomeExercicio: 'Supino Reto',
+          horarioTermino: fakeTime,
+        );
+        expect(resultadoExato, ResultadoAgendamentoDescanso.descartadoPorConcorrencia);
+        expect(adaptador.modosAgendamento, isEmpty);
+      });
+
+      test('reutiliza requisição nativa de permissão concorrente chamando adaptador exatamente uma vez', () async {
+        await servico.inicializar();
+
+        adaptador.completerPermissao = Completer<bool>();
+        final p1 = servico.solicitarPermissao(forcar: true);
+        final p2 = servico.solicitarPermissao(forcar: true);
+        final p3 = servico.solicitarPermissao(forcar: true);
+
+        // Permite avanço até o adaptador nativo
+        await Future<void>.delayed(Duration.zero);
+        expect(adaptador.chamadasSolicitarPermissao, 1);
+
+        adaptador.completerPermissao!.complete(true);
+        final r1 = await p1;
+        final r2 = await p2;
+        final r3 = await p3;
+
+        expect(r1, isTrue);
+        expect(r2, isTrue);
+        expect(r3, isTrue);
+        expect(adaptador.chamadasSolicitarPermissao, 1);
+      });
+
+      test('diferencia app desautorizado, canal bloqueado, canal sem som e falha técnica de consulta', () async {
+        // 1. App com notificações desativadas no SO
+        adaptador.notificacoesAtivas = false;
+        final estadoAppDesativado = await servico.verificarEstadoDoCanalDescanso();
+        expect(estadoAppDesativado, ResultadoAgendamentoDescanso.notificacaoNaoAutorizada);
+
+        // 2. Canal bloqueado pelo usuário (Importance.none)
+        adaptador.notificacoesAtivas = true;
+        adaptador.canais = <AndroidNotificationChannel>[
+          const AndroidNotificationChannel(
+            'offline_gym_rest_alarm_v3',
+            'Fim do Descanso',
+            importance: Importance.none,
+            playSound: true,
+          ),
+        ];
+        final estadoCanalBloqueado = await servico.verificarEstadoDoCanalDescanso();
+        expect(estadoCanalBloqueado, ResultadoAgendamentoDescanso.canalBloqueado);
+
+        // 3. Canal ativo mas com som desativado pelo usuário (playSound: false)
+        adaptador.canais = <AndroidNotificationChannel>[
+          const AndroidNotificationChannel(
+            'offline_gym_rest_alarm_v3',
+            'Fim do Descanso',
+            importance: Importance.max,
+            playSound: false,
+          ),
+        ];
+        final estadoCanalSemSom = await servico.verificarEstadoDoCanalDescanso();
+        expect(estadoCanalSemSom, ResultadoAgendamentoDescanso.canalSemSom);
+
+        // 4. Falha técnica de consulta na API não pode ser diagnosticada como permissão negada nem silenciado
+        adaptador.erroConsultaCanais = Exception('Platform channel timeout');
+        final estadoFalhaConsulta = await servico.verificarEstadoDoCanalDescanso();
+        expect(estadoFalhaConsulta, ResultadoAgendamentoDescanso.falhaAoAgendar);
+      });
+
+      test('coexistência v2+v3 com alerta v3 pendente preserva o agendamento e adia exclusão de v2', () async {
+        // Simula coexistência após atualização onde v3 já existe e tem alerta pendente
+        adaptador.canais = <AndroidNotificationChannel>[
+          const AndroidNotificationChannel('offline_gym_rest_timer_v2', 'Descanso v2'),
+          const AndroidNotificationChannel('offline_gym_rest_alarm_v3', 'Fim do Descanso v3'),
+        ];
+        adaptador.requisicoesPendentes = <PendingNotificationRequest>[
+          const PendingNotificationRequest(2501, 'Descanso finalizado', 'Hora da série', null),
+        ];
+
+        await servico.inicializar();
+
+        // O alerta 2501 NÃO deve ser cancelado e o canal v2 NÃO deve ser deletado agora
+        expect(adaptador.historicoOperacoes.contains('cancelar_2501'), isFalse);
+        expect(adaptador.historicoOperacoes.contains('deletarCanal_offline_gym_rest_timer_v2'), isFalse);
+      });
+
+      test('migração v2 pura sem v3 prévio cancela alerta antigo do v2 e remove o canal v2', () async {
+        // Simula aparelho com apenas v2 e alerta pendente
+        adaptador.canais = <AndroidNotificationChannel>[
+          const AndroidNotificationChannel('offline_gym_rest_timer_v2', 'Descanso v2'),
+        ];
+        adaptador.requisicoesPendentes = <PendingNotificationRequest>[
+          const PendingNotificationRequest(2501, 'Descanso v2 antigo', 'Hora da série', null),
+        ];
+
+        await servico.inicializar();
+
+        expect(adaptador.historicoOperacoes.contains('cancelar_2501'), isTrue);
+        expect(adaptador.historicoOperacoes.contains('deletarCanal_offline_gym_rest_timer_v2'), isTrue);
+      });
+
+      test('reinício de processo com apenas canal v3 não cancela o alerta 2501', () async {
+        // App já migrado, processo reiniciou enquanto descansava
+        adaptador.canais = <AndroidNotificationChannel>[
+          const AndroidNotificationChannel('offline_gym_rest_alarm_v3', 'Fim do Descanso v3'),
+        ];
+        adaptador.requisicoesPendentes = <PendingNotificationRequest>[
+          const PendingNotificationRequest(2501, 'Descanso v3 ativo', 'Hora da série', null),
+        ];
+
+        await servico.inicializar();
+
+        expect(adaptador.historicoOperacoes.contains('cancelar_2501'), isFalse);
+      });
+
+      test('falha real de inicialização propaga erro e permite recuperação na chamada subsequente', () async {
+        adaptador.erroAoCriarCanal = Exception('FALHA_CANAL_SISTEMA');
+
+        await expectLater(servico.inicializar(), throwsA(isA<Exception>()));
+        expect(servico.inicializado, isFalse);
+
+        // Limpa o erro do adaptador e chama novamente
+        adaptador.erroAoCriarCanal = null;
+        await servico.inicializar();
+
+        expect(servico.inicializado, isTrue);
+      });
+
+      test('substituição com falha no novo agendamento encaminha a limpeza do alerta anterior', () async {
+        // Descanso 1 agendado com sucesso
+        final res1 = await servico.agendarNotificacaoDescanso(
+          idExecucao: 1,
+          nomeExercicio: 'Supino',
+          horarioTermino: fakeTime.add(const Duration(seconds: 60)),
+        );
+        expect(res1, ResultadoAgendamentoDescanso.agendadoExato);
+        expect(servico.ultimoIdExecucaoAgendadoConhecido, 1);
+
+        // Descanso 2 inicia, mas notificações foram desativadas nas configurações do SO
+        adaptador.notificacoesAtivas = false;
+        adaptador.permissaoNotificacoesConcedida = false;
+        final res2 = await servico.agendarNotificacaoDescanso(
+          idExecucao: 2,
+          nomeExercicio: 'Crucifixo',
+          horarioTermino: fakeTime.add(const Duration(seconds: 45)),
+        );
+        expect(res2, ResultadoAgendamentoDescanso.notificacaoNaoAutorizada);
+
+        // Aguarda a fila processar a limpeza do alerta 1 anterior
+        await Future<void>.delayed(Duration.zero);
+        expect(adaptador.historicoOperacoes.contains('cancelar_2501'), isTrue);
+        expect(servico.ultimoIdExecucaoAgendadoConhecido, isNull);
+      });
+
+      test('recuperação posterior a cancelamento bem-sucedido não executa novo cancelamento e preserva alerta novo', () async {
+        // Falha inicial no cancelamento do descanso 20
+        adaptador.erroAoCancelar = Exception('Erro temporário de cancelamento');
+        final resCancel20 = await servico.cancelarNotificacaoDescanso(idExecucao: 20);
+        expect(resCancel20, ResultadoCancelamento.falhaTecnica);
+        expect(servico.temLimpezaPendente, isTrue);
+
+        // Um novo descanso 21 inicia; o erro de cancelamento foi resolvido e a limpeza prévia funciona
+        adaptador.erroAoCancelar = null;
+        final res21 = await servico.agendarNotificacaoDescanso(
+          idExecucao: 21,
+          nomeExercicio: 'Barra Fixa',
+          horarioTermino: fakeTime.add(const Duration(seconds: 40)),
+        );
+        expect(res21, ResultadoAgendamentoDescanso.agendadoExato);
+        expect(servico.idExecucaoAtiva, 21);
+        expect(servico.ultimoIdExecucaoAgendadoConhecido, 21);
+        expect(servico.temLimpezaPendente, isFalse);
+        expect(adaptador.alertasPendentesPorId.containsKey(2501), isTrue);
+
+        // Recuperação posterior verifica que a pendência já foi resolvida e não executa novo cancelamento
+        final cancelamentosAntes = adaptador.historicoOperacoes
+            .where((op) => op == 'cancelar_2501')
+            .length;
+        final resRecupPosterior = await servico.tentarRecuperarCancelamentoPendente();
+        expect(resRecupPosterior, ResultadoCancelamento.sucesso);
+
+        final cancelamentosDepois = adaptador.historicoOperacoes
+            .where((op) => op == 'cancelar_2501')
+            .length;
+        expect(cancelamentosDepois, cancelamentosAntes);
+
+        // O alerta 21 permanece pendente e a identificação conhecida continua 21
+        expect(adaptador.alertasPendentesPorId.containsKey(2501), isTrue);
+        expect(servico.ultimoIdExecucaoAgendadoConhecido, 21);
+      });
+
+      test('concorrência real: recuperação antiga suspensa não apaga alerta novo recém-agendado', () async {
+        // Descanso 20 agendado inicialmente
+        await servico.agendarNotificacaoDescanso(
+          idExecucao: 20,
+          nomeExercicio: 'Supino',
+          horarioTermino: fakeTime.add(const Duration(seconds: 50)),
+        );
+        expect(adaptador.alertasPendentesPorId.containsKey(2501), isTrue);
+
+        // Cancelamento do descanso 20 falha
+        adaptador.erroAoCancelar = Exception('Falha de cancelamento');
+        final resCancel20 = await servico.cancelarNotificacaoDescanso(idExecucao: 20);
+        expect(resCancel20, ResultadoCancelamento.falhaTecnica);
+        expect(servico.temLimpezaPendente, isTrue);
+
+        // Remove erro de cancelamento mas suspende a operação no adaptador com Completer
+        adaptador.erroAoCancelar = null;
+        adaptador.bloqueadorCancelar = Completer<void>();
+
+        // Dispara recuperação da limpeza do descanso 20 (fica suspensa no adaptador)
+        final futureRecuperacao = servico.tentarRecuperarCancelamentoPendente();
+
+        // Concorrentemente, um novo descanso 22 é iniciado e agenda com sucesso
+        final futureAgendamento = servico.agendarNotificacaoDescanso(
+          idExecucao: 22,
+          nomeExercicio: 'Barra Fixa',
+          horarioTermino: fakeTime.add(const Duration(seconds: 40)),
+        );
+
+        // Libera a recuperação suspensa para que ela concorra na fila
+        adaptador.bloqueadorCancelar!.complete();
+
+        await futureRecuperacao;
+        final resAgendamento = await futureAgendamento;
+
+        expect(resAgendamento, ResultadoAgendamentoDescanso.agendadoExato);
+        // O alerta do novo descanso 22 DEVE permanecer pendente no mapa por ID
+        expect(adaptador.alertasPendentesPorId.containsKey(2501), isTrue);
+        expect(servico.ultimoIdExecucaoAgendadoConhecido, 22);
+      });
+
+      test('validação dentro do serviço rejeita resposta negativa se execução foi substituída ou expirou', () async {
+        // Inicia agendamento 30
+        adaptador.completerPermissao = Completer<bool>();
+        final f30 = servico.agendarNotificacaoDescanso(
+          idExecucao: 30,
+          nomeExercicio: 'Remada',
+          horarioTermino: fakeTime.add(const Duration(seconds: 30)),
+        );
+
+        // Enquanto f30 aguardava permissão, execução 31 assumiu
+        await Future<void>.delayed(Duration.zero);
+        unawaited(
+          servico.agendarNotificacaoDescanso(
+            idExecucao: 31,
+            nomeExercicio: 'Rosca',
+            horarioTermino: fakeTime.add(const Duration(seconds: 60)),
+          ),
+        );
+
+        // Responde a permissão de f30 com negativo
+        adaptador.completerPermissao!.complete(false);
+        final res30 = await f30;
+
+        // O serviço deve descartar por concorrência e não devolver notificacaoNaoAutorizada
+        expect(res30, ResultadoAgendamentoDescanso.descartadoPorConcorrencia);
+      });
+
+      test('agenda com exactAllowWhileIdle quando permissão concedida e alarme exato disponível', () async {
+        final resultado = await servico.agendarNotificacaoDescanso(
+          idExecucao: 12,
+          nomeExercicio: 'Leg Press',
+          horarioTermino: fakeTime.add(const Duration(seconds: 60)),
+        );
+
+        expect(resultado, ResultadoAgendamentoDescanso.agendadoExato);
+        expect(adaptador.modosAgendamento.last, AndroidScheduleMode.exactAllowWhileIdle);
+        final androidDetails = adaptador.detalhesAgendamento.last.android;
+        expect(androidDetails?.channelId, 'offline_gym_rest_alarm_v3');
+        expect(androidDetails?.audioAttributesUsage, AudioAttributesUsage.alarm);
+        expect(androidDetails?.sound, const RawResourceAndroidNotificationSound('offline_gym_alarm'));
+      });
+
+      test('faz fallback para inexactAllowWhileIdle quando alarme exato estiver indisponível', () async {
+        adaptador.alarmeExatoDisponivel = false;
+
+        final resultado = await servico.agendarNotificacaoDescanso(
+          idExecucao: 13,
+          nomeExercicio: 'Puxada Alta',
+          horarioTermino: fakeTime.add(const Duration(seconds: 45)),
+        );
+
+        expect(resultado, ResultadoAgendamentoDescanso.agendadoInexato);
+        expect(adaptador.modosAgendamento.last, AndroidScheduleMode.inexactAllowWhileIdle);
+      });
+
+      test('faz fallback para inexact quando chamada exata lança exceção técnica', () async {
+        var chamadas = 0;
+        adaptador.erroAoAgendar = Exception('SecurityException: Exact alarms not permitted');
+
+        // Substitui temporariamente para falhar no primeiro modo e passar no segundo
+        servico.definirAdaptadorParaTestes(
+          _AdaptadorFallbackCustomizado(adaptador, onAgendar: (mode) {
+            chamadas++;
+            if (mode == AndroidScheduleMode.exactAllowWhileIdle) {
+              throw Exception('Exact not allowed');
+            }
+          }),
+        );
+
+        final resultado = await servico.agendarNotificacaoDescanso(
+          idExecucao: 14,
+          nomeExercicio: 'Desenvolvimento',
+          horarioTermino: fakeTime.add(const Duration(seconds: 50)),
+        );
+
+        expect(resultado, ResultadoAgendamentoDescanso.agendadoInexato);
+        expect(chamadas, 2);
+      });
+
+      test('retorna falhaAoAgendar quando tanto agendamento exato quanto inexato falham', () async {
+        adaptador.erroAoAgendar = Exception('Falha crítica do plugin');
+
+        final resultado = await servico.agendarNotificacaoDescanso(
+          idExecucao: 15,
+          nomeExercicio: 'Elevação Lateral',
+          horarioTermino: fakeTime.add(const Duration(seconds: 30)),
+        );
+
+        expect(resultado, ResultadoAgendamentoDescanso.falhaAoAgendar);
+      });
+
+      test('ProvedorDeTreino coordena primeiro plano com invalidação imediata e áudio interno', () async {
+        final provedor = ProvedorDeTreino(BancoDeDados.instance);
+        provedor.mockIsAppForeground = true;
+        provedor.relogioParaTestes = () => fakeTime;
+
+        void Function(Timer)? tickCallback;
+        provedor.criadorDeTimerParaTestes = (duration, callback) {
+          tickCallback = callback;
+          return Timer(duration, () {});
+        };
+
+        const exercicio = ExercicioPlanejado(
+          id: 991,
+          diaSemana: 1,
+          nome: 'Supino Inclinado',
+          carga: 30,
+          series: 3,
+          repeticoes: 10,
+          tempoDescansoSegundos: 60,
+        );
+
+        provedor.iniciarCronometroDeDescanso(exercicio, customSeconds: 60);
+        final idAntes = provedor.idExecucaoDescansoAtual;
+        expect(provedor.cronometroConcluido, isFalse);
+
+        // Avança o relógio controlado até expirar
+        fakeTime = fakeTime.add(const Duration(seconds: 60));
+        tickCallback!(Timer(Duration.zero, () {}));
+
+        expect(provedor.cronometroConcluido, isTrue);
+        expect(provedor.tempoRestanteDoCronometro, 0);
+        expect(provedor.idExecucaoDescansoAtual, greaterThan(idAntes));
+        expect(chamadasTocarAlarme, 1);
+
+        await Future<void>.delayed(Duration.zero);
+        expect(adaptador.historicoOperacoes.contains('cancelar_2501'), isTrue);
+      });
+
+      test('ProvedorDeTreino preserva aviso nativo e não toca áudio interno se estiver em segundo plano', () async {
+        final provedor = ProvedorDeTreino(BancoDeDados.instance);
+        provedor.mockIsAppForeground = false; // Em segundo plano / tela apagada
+        provedor.relogioParaTestes = () => fakeTime;
+
+        void Function(Timer)? tickCallback;
+        provedor.criadorDeTimerParaTestes = (duration, callback) {
+          tickCallback = callback;
+          return Timer(duration, () {});
+        };
+
+        const exercicio = ExercicioPlanejado(
+          id: 992,
+          diaSemana: 1,
+          nome: 'Crucifixo',
+          carga: 14,
+          series: 3,
+          repeticoes: 12,
+          tempoDescansoSegundos: 60,
+        );
+
+        provedor.iniciarCronometroDeDescanso(exercicio, customSeconds: 60);
+        expect(provedor.cronometroConcluido, isFalse);
+
+        // Aguarda deterministicamente a conclusão do agendamento
+        while (!adaptador.alertasPendentesPorId.containsKey(2501)) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        expect(adaptador.alertasPendentesPorId.containsKey(2501), isTrue);
+
+        // Registra a quantidade de cancelamentos prévios (limpeza inicial de substituição/reinício)
+        final cancelamentosAntes = adaptador.historicoOperacoes
+            .where((op) => op == 'cancelar_2501')
+            .length;
+
+        // Avança o relógio controlado até expirar no background
+        fakeTime = fakeTime.add(const Duration(seconds: 60));
+        tickCallback!(Timer(Duration.zero, () {}));
+
+        expect(provedor.cronometroConcluido, isTrue);
+        // Confirma zero chamadas de áudio interno
+        expect(chamadasTocarAlarme, 0);
+
+        await Future<void>.delayed(Duration.zero);
+        // Confirma nenhum cancelamento adicional causado pela expiração
+        final cancelamentosDepois = adaptador.historicoOperacoes
+            .where((op) => op == 'cancelar_2501')
+            .length;
+        expect(cancelamentosDepois, cancelamentosAntes);
+
+        // Confirma que o alerta pendente nativo foi preservado para o sistema disparar
+        expect(adaptador.alertasPendentesPorId.containsKey(2501), isTrue);
+      });
+
+      test('aoRetornarParaPrimeiroPlano após expiração em segundo plano atualiza tela sem áudio retroativo', () async {
+        final provedor = ProvedorDeTreino(BancoDeDados.instance);
+        provedor.mockIsAppForeground = false;
+        provedor.relogioParaTestes = () => fakeTime;
+
+        const exercicio = ExercicioPlanejado(
+          id: 993,
+          diaSemana: 1,
+          nome: 'Tríceps Testa',
+          carga: 20,
+          series: 3,
+          repeticoes: 10,
+          tempoDescansoSegundos: 60,
+        );
+
+        // Inicia descanso válido de 60s
+        provedor.iniciarCronometroDeDescanso(exercicio, customSeconds: 60);
+        expect(provedor.cronometroConcluido, isFalse);
+
+        // Avança o relógio controlado em segundo plano além do prazo
+        fakeTime = fakeTime.add(const Duration(seconds: 65));
+
+        // Retorna ao primeiro plano
+        provedor.mockIsAppForeground = true;
+        await provedor.aoRetornarParaPrimeiroPlano();
+
+        expect(provedor.cronometroConcluido, isTrue);
+        expect(provedor.tempoRestanteDoCronometro, 0);
+        expect(chamadasTocarAlarme, 0); // Sem áudio retroativo!
+      });
+
+      test('retorno das configurações atualiza permissão concedida silenciosamente sem repetir diálogo', () async {
+        final provedor = ProvedorDeTreino(BancoDeDados.instance);
+        provedor.relogioParaTestes = () => fakeTime;
+
+        // Permissão inicialmente negada
+        adaptador.notificacoesAtivas = false;
+        adaptador.permissaoNotificacoesConcedida = false;
+        await servico.solicitarPermissao();
+        expect(servico.statusPermissaoNotificacao, StatusPermissaoNotificacao.negada);
+        final chamadasAntes = adaptador.chamadasSolicitarPermissao;
+
+        // Usuário ativa nas configurações do Android
+        adaptador.notificacoesAtivas = true;
+
+        // App retoma ao primeiro plano
+        await provedor.aoRetornarParaPrimeiroPlano();
+
+        expect(servico.statusPermissaoNotificacao, StatusPermissaoNotificacao.concedida);
+        expect(adaptador.chamadasSolicitarPermissao, chamadasAntes); // Sem abrir novo diálogo
+      });
+
+      test('falha técnica na consulta ao retornar não transforma permissão em negada', () async {
+        final provedor = ProvedorDeTreino(BancoDeDados.instance);
+        provedor.relogioParaTestes = () => fakeTime;
+
+        // Status inicial concedido
+        adaptador.notificacoesAtivas = true;
+        await servico.solicitarPermissao();
+        expect(servico.statusPermissaoNotificacao, StatusPermissaoNotificacao.concedida);
+
+        // Retorno com erro técnico de consulta
+        adaptador.erroConsultaStatus = Exception('Timeout IPC');
+        await provedor.aoRetornarParaPrimeiroPlano();
+
+        // O status deve permanecer concedido
+        expect(servico.statusPermissaoNotificacao, StatusPermissaoNotificacao.concedida);
+      });
+
+      test('cancelarCronometroDeDescanso invalida execução ativa e cancela notificação', () async {
+        final provedor = ProvedorDeTreino(BancoDeDados.instance);
+        provedor.relogioParaTestes = () => fakeTime;
+
+        const exercicio = ExercicioPlanejado(
+          id: 994,
+          diaSemana: 1,
+          nome: 'Rosca Scott',
+          carga: 15,
+          series: 3,
+          repeticoes: 10,
+          tempoDescansoSegundos: 60,
+        );
+
+        provedor.iniciarCronometroDeDescanso(exercicio);
+        final idAntes = provedor.idExecucaoDescansoAtual;
+
+        provedor.cancelarCronometroDeDescanso();
+
+        expect(provedor.idExecucaoDescansoAtual, greaterThan(idAntes));
+        expect(provedor.idExercicioComCronometroAtivo, isNull);
+        expect(provedor.cronometroConcluido, isFalse);
+
+        await Future<void>.delayed(Duration.zero);
+        expect(adaptador.historicoOperacoes.contains('cancelar_2501'), isTrue);
+      });
+    });
   });
+}
+
+class AdaptadorSimuladoNotificacoes implements AdaptadorNotificacoesNativas {
+  bool? retornoInicializar = true;
+  Exception? erroAoInicializar;
+  Exception? erroAoCriarCanal;
+  Exception? erroAoDeletarCanal;
+  Exception? erroAoAgendar;
+  Exception? erroAoCancelar;
+  Exception? erroConsultaStatus;
+  Exception? erroConsultaCanais;
+
+  List<AndroidNotificationChannel> canais = <AndroidNotificationChannel>[];
+  List<PendingNotificationRequest> requisicoesPendentes = <PendingNotificationRequest>[];
+  final Map<int, PendingNotificationRequest> alertasPendentesPorId =
+      <int, PendingNotificationRequest>{};
+  final List<String> historicoOperacoes = <String>[];
+  final List<AndroidScheduleMode> modosAgendamento = <AndroidScheduleMode>[];
+  final List<NotificationDetails> detalhesAgendamento = <NotificationDetails>[];
+
+  bool notificacoesAtivas = true;
+  bool permissaoNotificacoesConcedida = true;
+  int chamadasSolicitarPermissao = 0;
+  Completer<bool>? completerPermissao;
+  Completer<void>? bloqueadorCancelar;
+  Completer<void>? bloqueadorAgendar;
+  bool alarmeExatoDisponivel = true;
+
+  @override
+  Future<bool?> inicializar(InitializationSettings settings) async {
+    historicoOperacoes.add('inicializar');
+    if (erroAoInicializar != null) throw erroAoInicializar!;
+    return retornoInicializar;
+  }
+
+  @override
+  Future<List<AndroidNotificationChannel>?> obterCanaisDeNotificacao() async {
+    historicoOperacoes.add('obterCanais');
+    if (erroConsultaCanais != null) throw erroConsultaCanais!;
+    return List<AndroidNotificationChannel>.from(canais);
+  }
+
+  @override
+  Future<void> criarCanalDeNotificacao(AndroidNotificationChannel canal) async {
+    historicoOperacoes.add('criarCanal_${canal.id}');
+    if (erroAoCriarCanal != null) throw erroAoCriarCanal!;
+    canais.removeWhere((c) => c.id == canal.id);
+    canais.add(canal);
+  }
+
+  @override
+  Future<void> deletarCanalDeNotificacao(String canalId) async {
+    historicoOperacoes.add('deletarCanal_$canalId');
+    if (erroAoDeletarCanal != null) throw erroAoDeletarCanal!;
+    canais.removeWhere((c) => c.id == canalId);
+  }
+
+  @override
+  Future<bool?> notificacoesEstaoAtivas() async {
+    historicoOperacoes.add('notificacoesEstaoAtivas');
+    if (erroConsultaStatus != null) throw erroConsultaStatus!;
+    return notificacoesAtivas;
+  }
+
+  @override
+  Future<bool?> solicitarPermissaoNotificacoes() async {
+    chamadasSolicitarPermissao++;
+    historicoOperacoes.add('solicitarPermissao');
+    if (completerPermissao != null) {
+      return await completerPermissao!.future;
+    }
+    return permissaoNotificacoesConcedida;
+  }
+
+  @override
+  Future<bool?> podeAgendarAlarmesExatos() async {
+    historicoOperacoes.add('podeAgendarAlarmesExatos');
+    return alarmeExatoDisponivel;
+  }
+
+  @override
+  Future<List<PendingNotificationRequest>> obterRequisicoesPendentes() async {
+    historicoOperacoes.add('obterRequisicoesPendentes');
+    return List<PendingNotificationRequest>.from(requisicoesPendentes);
+  }
+
+  @override
+  Future<void> agendarZoned({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+    required AndroidScheduleMode androidScheduleMode,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    historicoOperacoes.add('agendarZoned_$id');
+    modosAgendamento.add(androidScheduleMode);
+    detalhesAgendamento.add(notificationDetails);
+    if (bloqueadorAgendar != null) {
+      await bloqueadorAgendar!.future;
+    }
+    if (erroAoAgendar != null) throw erroAoAgendar!;
+    final req = PendingNotificationRequest(id, title, body, null);
+    alertasPendentesPorId[id] = req;
+    requisicoesPendentes.removeWhere((r) => r.id == id);
+    requisicoesPendentes.add(req);
+  }
+
+  @override
+  Future<void> cancelar(int id) async {
+    historicoOperacoes.add('cancelar_$id');
+    if (bloqueadorCancelar != null) {
+      await bloqueadorCancelar!.future;
+    }
+    if (erroAoCancelar != null) throw erroAoCancelar!;
+    alertasPendentesPorId.remove(id);
+    requisicoesPendentes.removeWhere((r) => r.id == id);
+  }
+}
+
+class _AdaptadorFallbackCustomizado implements AdaptadorNotificacoesNativas {
+  _AdaptadorFallbackCustomizado(this._base, {required this.onAgendar});
+
+  final AdaptadorSimuladoNotificacoes _base;
+  final void Function(AndroidScheduleMode mode) onAgendar;
+
+  @override
+  Future<bool?> inicializar(InitializationSettings settings) =>
+      _base.inicializar(settings);
+
+  @override
+  Future<List<AndroidNotificationChannel>?> obterCanaisDeNotificacao() =>
+      _base.obterCanaisDeNotificacao();
+
+  @override
+  Future<void> criarCanalDeNotificacao(AndroidNotificationChannel canal) =>
+      _base.criarCanalDeNotificacao(canal);
+
+  @override
+  Future<void> deletarCanalDeNotificacao(String canalId) =>
+      _base.deletarCanalDeNotificacao(canalId);
+
+  @override
+  Future<bool?> notificacoesEstaoAtivas() => _base.notificacoesEstaoAtivas();
+
+  @override
+  Future<bool?> solicitarPermissaoNotificacoes() =>
+      _base.solicitarPermissaoNotificacoes();
+
+  @override
+  Future<bool?> podeAgendarAlarmesExatos() => _base.podeAgendarAlarmesExatos();
+
+  @override
+  Future<List<PendingNotificationRequest>> obterRequisicoesPendentes() =>
+      _base.obterRequisicoesPendentes();
+
+  @override
+  Future<void> agendarZoned({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledDate,
+    required NotificationDetails notificationDetails,
+    required AndroidScheduleMode androidScheduleMode,
+    DateTimeComponents? matchDateTimeComponents,
+  }) async {
+    onAgendar(androidScheduleMode);
+  }
+
+  @override
+  Future<void> cancelar(int id) => _base.cancelar(id);
 }

@@ -1749,12 +1749,12 @@ class BancoDeDados {
       final dataLimite =
           DateTime.now().subtract(Duration(days: dias)).toIso8601String();
       final rows = await db.rawQuery('''
-        SELECT s.nomeExercicio, s.serieNumero, s.cargaUtilizada, s.repeticoes,
+        SELECT s.idHistoricoTreino, h.dataISO, s.nomeExercicio, s.serieNumero, s.cargaUtilizada, s.repeticoes,
                COALESCE(s.tipo, 'normal') AS tipo, s.rpe
         FROM historico_series AS s
         INNER JOIN historico_treinos AS h ON h.id = s.idHistoricoTreino
         WHERE h.dataISO >= ?
-        ORDER BY h.dataISO DESC;
+        ORDER BY h.dataISO DESC, s.idHistoricoTreino DESC, s.serieNumero ASC;
       ''', <Object?>[dataLimite]);
 
       return rows

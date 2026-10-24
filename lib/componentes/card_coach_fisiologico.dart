@@ -1,5 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../dominio/coach_cientifico.dart';
+import '../provedores/estado_tema.dart';
+
+/// Calcula a cor neon estrita da escala fisiológica:
+/// 100% = Verde Neon (#00E676 - totalmente recuperado / ótima simetria)
+/// 50%  = Laranja Neon (#FF9100 - em regeneração / atenção)
+/// 0%   = Vermelho Neon (#FF1744 - fadiga residual alta / desbalanceado)
+/// Para Fadiga Acumulada, inverte a lógica (0% = descansado, 100% = exaustão).
+Color obterCorFisiologica({
+  required int percentual,
+  required Color corSucesso,
+  required Color corAlerta,
+  required Color corPerigo,
+  bool invertido = false,
+}) {
+  final pct = percentual.clamp(0, 100);
+  if (invertido) {
+    if (pct <= 35) return corSucesso;
+    if (pct <= 70) return corAlerta;
+    return corPerigo;
+  } else {
+    if (pct >= 75) return corSucesso;
+    if (pct >= 40) return corAlerta;
+    return corPerigo;
+  }
+}
 
 class CardCoachFisiologico extends StatefulWidget {
   const CardCoachFisiologico({
@@ -24,18 +50,25 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final diag = widget.diagnostico;
-
     final temAlertas = diag.pareceres.isNotEmpty;
+
+    // Cores dinâmicas de identidade com base no tema ativo
+    final provedorTema = context.watch<ProvedorDeTema>();
+    final corDestaque = provedorTema.corInvertidaDestaque;
+    final gradienteCoach = provedorTema.gradienteDualToneDestaque;
+    final corSucesso = provedorTema.corSucessoNeon;
+    final corAlerta = provedorTema.corAlertaNeon;
+    final corPerigo = provedorTema.corPerigoNeon;
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         side: BorderSide(
           color: diag.semanaSugeridaDeload
-              ? const Color(0xFFE67E22)
-              : theme.colorScheme.primary.withValues(alpha: 0.35),
-          width: 1.2,
+              ? corAlerta
+              : corDestaque.withValues(alpha: isDark ? 0.45 : 0.35),
+          width: 1.4,
         ),
       ),
       child: Padding(
@@ -45,24 +78,25 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
           children: [
             Row(
               children: [
+                // Ícone do Coach com Gradiente Dual-Tone e Efeito Neon Glow
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: gradienteCoach,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: corDestaque.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
                   child: const Icon(
                     Icons.psychology_rounded,
                     color: Colors.white,
-                    size: 24,
+                    size: 26,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -77,7 +111,7 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                               diag.saudacaoPersonalizada,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 13,
+                                fontSize: 13.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -86,20 +120,24 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                              horizontal: 7,
+                              vertical: 2.5,
                             ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary
-                                  .withValues(alpha: 0.15),
+                              color: corDestaque.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: corDestaque.withValues(alpha: 0.45),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
-                              'OFFLINE',
+                              'COACH OFFLINE',
                               style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.primary,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                color: corDestaque,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
@@ -139,16 +177,19 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
             ),
             const SizedBox(height: 14),
 
-            // Barras de Simetria e Fadiga
+            // Barras de Simetria e Fadiga com Contraste Fisiológico Neon (100% Verde, 50% Laranja, 0% Vermelho)
             Row(
               children: [
                 Expanded(
                   child: _IndicadorMetrico(
                     titulo: 'Simetria Muscular',
                     percentual: diag.indiceEquilibrioPercentual,
-                    cor: diag.indiceEquilibrioPercentual >= 80
-                        ? const Color(0xFF00B894)
-                        : const Color(0xFFE67E22),
+                    cor: obterCorFisiologica(
+                      percentual: diag.indiceEquilibrioPercentual,
+                      corSucesso: corSucesso,
+                      corAlerta: corAlerta,
+                      corPerigo: corPerigo,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -156,11 +197,13 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                   child: _IndicadorMetrico(
                     titulo: 'Fadiga Acumulada',
                     percentual: diag.indiceFadigaPercentual,
-                    cor: diag.indiceFadigaPercentual >= 85
-                        ? const Color(0xFFD63031)
-                        : (diag.indiceFadigaPercentual >= 60
-                            ? const Color(0xFFE67E22)
-                            : const Color(0xFF00B894)),
+                    cor: obterCorFisiologica(
+                      percentual: diag.indiceFadigaPercentual,
+                      corSucesso: corSucesso,
+                      corAlerta: corAlerta,
+                      corPerigo: corPerigo,
+                      invertido: true,
+                    ),
                   ),
                 ),
               ],
@@ -184,7 +227,7 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                           Icon(
                             Icons.battery_charging_full_rounded,
                             size: 18,
-                            color: theme.colorScheme.primary,
+                            color: corDestaque,
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -192,7 +235,7 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
+                              color: corDestaque,
                             ),
                           ),
                         ],
@@ -202,7 +245,7 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                             ? Icons.keyboard_arrow_up_rounded
                             : Icons.keyboard_arrow_down_rounded,
                         size: 18,
-                        color: theme.colorScheme.primary,
+                        color: corDestaque,
                       ),
                     ],
                   ),
@@ -212,15 +255,27 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                 const SizedBox(height: 4),
                 ...diag.recuperacaoMuscular.map((m) => _BarraRecuperacaoMuscular(
                       recuperacao: m,
+                      corSucesso: corSucesso,
+                      corAlerta: corAlerta,
+                      corDestaque: corDestaque,
+                      corPerigo: corPerigo,
                     )),
               ] else ...[
                 const SizedBox(height: 4),
-                ...diag.recuperacaoMuscular
-                    .where((m) => m.horasDesdeUltimoTreino != null)
-                    .take(3)
+                ...(diag.recuperacaoMuscular
+                            .where((m) => m.horasDesdeUltimoTreino != null)
+                            .isNotEmpty
+                        ? diag.recuperacaoMuscular
+                            .where((m) => m.horasDesdeUltimoTreino != null)
+                            .take(4)
+                        : diag.recuperacaoMuscular.take(3))
                     .map((m) => _BarraRecuperacaoMuscular(
                           recuperacao: m,
                           compacto: true,
+                          corSucesso: corSucesso,
+                          corAlerta: corAlerta,
+                          corDestaque: corDestaque,
+                          corPerigo: corPerigo,
                         )),
               ],
             ],
@@ -231,9 +286,9 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                 width: double.infinity,
                 child: FilledButton.tonalIcon(
                   style: FilledButton.styleFrom(
-                    backgroundColor:
-                        const Color(0xFFE67E22).withValues(alpha: 0.18),
-                    foregroundColor: const Color(0xFFE67E22),
+                    backgroundColor: corAlerta.withValues(alpha: 0.18),
+                    foregroundColor: corAlerta,
+                    side: BorderSide(color: corAlerta.withValues(alpha: 0.45)),
                   ),
                   onPressed: widget.aoTocarDeload,
                   icon:
@@ -261,10 +316,10 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                         children: [
                           Icon(
                             _expandido
-                                ? Icons.keyboard_arrow_up_rounded
+                                 ? Icons.keyboard_arrow_up_rounded
                                 : Icons.keyboard_arrow_down_rounded,
                             size: 18,
-                            color: theme.colorScheme.primary,
+                            color: corDestaque,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -274,7 +329,7 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
+                              color: corDestaque,
                             ),
                           ),
                         ],
@@ -292,9 +347,25 @@ class _EstadoDoCardCoachFisiologico extends State<CardCoachFisiologico> {
               ),
               if (_expandido) ...[
                 const SizedBox(height: 8),
-                ...diag.pareceres.map((p) => _ItemParecerCoach(parecer: p)),
+                ...diag.pareceres.map((p) => _ItemParecerCoach(
+                      parecer: p,
+                      corDestaque: corDestaque,
+                      corSucesso: corSucesso,
+                      corAlerta: corAlerta,
+                      corPerigo: corPerigo,
+                    )),
               ],
             ],
+            const SizedBox(height: 10),
+            Text(
+              'Aviso: Estimativas informativas de treinamento físico que não substituem avaliação médica, fisioterapêutica ou de um profissional de educação física.',
+              style: TextStyle(
+                fontSize: 10,
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -351,9 +422,19 @@ class _IndicadorMetrico extends StatelessWidget {
 }
 
 class _ItemParecerCoach extends StatelessWidget {
-  const _ItemParecerCoach({required this.parecer});
+  const _ItemParecerCoach({
+    required this.parecer,
+    required this.corDestaque,
+    required this.corSucesso,
+    required this.corAlerta,
+    required this.corPerigo,
+  });
 
   final ParecerDoCoach parecer;
+  final Color corDestaque;
+  final Color corSucesso;
+  final Color corAlerta;
+  final Color corPerigo;
 
   @override
   Widget build(BuildContext context) {
@@ -362,88 +443,145 @@ class _ItemParecerCoach extends StatelessWidget {
 
     Color corBadge;
     IconData icone;
+    String tag;
     switch (parecer.tipo) {
       case TipoDeParecer.alertaFisiologico:
-        corBadge = const Color(0xFFE67E22);
+        corBadge = corAlerta;
         icone = Icons.warning_amber_rounded;
+        tag = 'ALERTA FISIOLÓGICO';
         break;
       case TipoDeParecer.otimizacao:
-        corBadge = const Color(0xFF0984E3);
+        corBadge = corDestaque;
         icone = Icons.trending_up_rounded;
+        tag = 'OTIMIZAÇÃO DO PLANO';
         break;
       case TipoDeParecer.destaque:
-        corBadge = theme.colorScheme.primary;
+        corBadge = corDestaque;
         icone = Icons.auto_awesome_rounded;
+        tag = 'DESTAQUE BIOMECÂNICO';
         break;
       case TipoDeParecer.sucesso:
-        corBadge = const Color(0xFF00B894);
-        icone = Icons.check_circle_outline_rounded;
+        corBadge = corSucesso;
+        icone = Icons.verified_rounded;
+        tag = 'PROGRESSO CONFIRMADO';
         break;
     }
 
     return Container(
       margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: corBadge.withValues(alpha: isDark ? 0.1 : 0.06),
+        color: corBadge.withValues(alpha: isDark ? 0.14 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: corBadge.withValues(alpha: 0.25)),
+        border: Border.all(
+          color: corBadge.withValues(alpha: isDark ? 0.40 : 0.25),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: corBadge.withValues(alpha: isDark ? 0.18 : 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icone, size: 16, color: corBadge),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  parecer.titulo,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.bold,
-                    color: corBadge,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            parecer.mensagem,
-            style: TextStyle(
-              fontSize: 11.5,
-              height: 1.35,
-              color: isDark ? Colors.white70 : Colors.black87,
-            ),
-          ),
-          if (parecer.recomendacaoPratica != null) ...[
-            const SizedBox(height: 6),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.lightbulb_outline_rounded,
-                      size: 14, color: Color(0xFFF1C40F)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Dica: ${parecer.recomendacaoPratica!}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+              width: 5,
+              color: corBadge,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: corBadge.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(icone, size: 16, color: corBadge),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            parecer.titulo,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: corBadge.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: corBadge.withValues(alpha: 0.5)),
+                          ),
+                          child: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: corBadge,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      parecer.mensagem,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: isDark ? Colors.white70 : const Color(0xFF333333),
                       ),
                     ),
-                  ),
-                ],
+                    if (parecer.recomendacaoPratica != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: corBadge.withValues(alpha: 0.35)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.lightbulb_rounded, size: 15, color: corBadge),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Dica prática: ${parecer.recomendacaoPratica!}',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : const Color(0xFF222222),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -452,28 +590,32 @@ class _ItemParecerCoach extends StatelessWidget {
 class _BarraRecuperacaoMuscular extends StatelessWidget {
   const _BarraRecuperacaoMuscular({
     required this.recuperacao,
+    required this.corSucesso,
+    required this.corAlerta,
+    required this.corDestaque,
+    required this.corPerigo,
     this.compacto = false,
   });
 
   final StatusRecuperacaoMuscular recuperacao;
+  final Color corSucesso;
+  final Color corAlerta;
+  final Color corDestaque;
+  final Color corPerigo;
   final bool compacto;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final pct = recuperacao.percentualRecuperado;
 
-    Color cor;
-    if (pct >= 85) {
-      cor = const Color(0xFF00B894);
-    } else if (pct >= 60) {
-      cor = const Color(0xFF0984E3);
-    } else if (pct >= 40) {
-      cor = const Color(0xFFE67E22);
-    } else {
-      cor = const Color(0xFFD63031);
-    }
+    // Escala fisiológica: 100% = Verde (#00E676), 50% = Laranja (#FF9100), 0% = Vermelho (#FF1744)
+    final cor = obterCorFisiologica(
+      percentual: recuperacao.percentualRecuperado,
+      corSucesso: corSucesso,
+      corAlerta: corAlerta,
+      corPerigo: corPerigo,
+    );
 
     return Container(
       margin: const EdgeInsets.only(top: 6),

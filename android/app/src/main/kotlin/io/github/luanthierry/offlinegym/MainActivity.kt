@@ -1,4 +1,4 @@
-package com.example.offline_gym
+package io.github.luanthierry.offlinegym
 
 import io.flutter.embedding.android.FlutterActivity
 

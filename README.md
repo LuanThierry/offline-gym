@@ -8,9 +8,9 @@
 
 O **Offline Gym** é um aplicativo completo e multiplataforma (Android e iOS) para planejar treinos, registrar séries e cargas, acompanhar hábitos e tarefas diárias, e monitorar sua evolução corporal com inteligência biomecânica — **100% gratuito, sem anúncios e com funcionamento offline nativo**.
 
-**Versão do Projeto:** `v1.4.1` (Código de Compilação `8`).
+**Versão do Projeto:** `v1.4.2` (Código de Compilação `9`).
 
-[🤖 Baixar para Android (.apk)](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym.apk) · [🍎 Baixar para iPhone (.ipa)](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym-iOS.ipa) · [Ver Versões Anteriores](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym) · [Política de Privacidade](PRIVACY_POLICY.md)
+[🤖 Baixar para Android (.apk)](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym.apk) · [🍎 Baixar para iPhone (.ipa)](https://github.com/LuanThierry/offline-gym/releases/latest/download/Offline-Gym-iOS.ipa) · [✉️ Suporte](mailto:luanthierry.suporte@gmail.com) · [Ver Versões Anteriores](https://github.com/LuanThierry/offline-gym/releases) · [Código-fonte](https://github.com/LuanThierry/offline-gym) · [Política de Privacidade](PRIVACY_POLICY.md)
 
 <hr>
 
@@ -168,7 +168,7 @@ O aplicativo será assinado pelo seu Apple ID gratuito e instalado instantaneame
 
 ---
 
-## ✨ Recursos e Funcionalidades (v1.4.1)
+## ✨ Recursos e Funcionalidades (v1.4.2)
 
 ### 🧠 Inteligência Própria & Fisiologia do Exercício
 
@@ -178,10 +178,12 @@ O aplicativo será assinado pelo seu Apple ID gratuito e instalado instantaneame
 - **Rampa de Aquecimento Inteligente (Warm-up com 1-Toque):** calcula e injeta séries preparatórias graduais (40%, 60%, 80%) para preparar suas articulações sem cansar o músculo antes das séries pesadas.
 - **Semana de Deload com 1-Toque:** reduz automaticamente 40% do volume das rotinas para permitir que seus tendões e sistema nervoso central descansem e se recuperem após semanas de treino intenso.
 
-### 🎨 Personalização de Temas & Tela AMOLED
+### 🎨 Personalização de Temas, Cores Neon & Áudios
 
 - **Modo Preto Puro AMOLED (#000000):** desliga completamente os pixels pretos em telas OLED/AMOLED, economizando o máximo de bateria durante o treino.
-- **6 Estilos Esportivos com Cores Isoladas:** Roxo Clássico, Foco Bestial (Esmeralda), Sangue & Ferro (Vermelho), Ouro Campeão (Dourado), Cyber Neon (Ciano) e Obsidiana Stealth (Grafite). Todas as cores de botões, gráficos e cartões mudam em harmonia.
+- **11 Paletas Esportivas Neon & Seletor Livre de Cores (Color Picker):** escolha entre 11 estilos vibrantes com brilho neon (Cyber Violet, Volt Green, Sangue & Ferro, Ouro Campeão, Cyber Neon Ciano real `#00E5FF`, Laranja Hipertrófico, Synthwave Magenta, Aqua Neon, Acid Volt, Azul Elétrico e Obsidiana Stealth) ou utilize o Color Picker integrado com espectro HSV e código Hex para personalizar o aplicativo e seus hábitos com qualquer cor do mundo.
+- **Biblioteca Dedicada de Sons do Cronômetro:** tela exclusiva com 17 sons sintetizados matematicamente (Gongos duplos de boxe, apitos de árbitro, cornetas de estádio, largada 3-2-1, pulsos e lasers sci-fi, além de músicas da memória do celular), com ducking inteligente que não interrompe nem pausa músicas em segundo plano (Spotify, Deezer, YouTube Music).
+- **Validação Física em Aparelho Real (Galaxy S23 / One UI):** comprovado em dispositivo físico que o aviso sonoro do término do descanso toca confiavelmente com a tela desligada/bloqueada sem pausar a música de fundo, emitindo também os bips sincronizados na contagem 3-2-1 com a tela ligada sem interromper o reprodutor musical.
 - **Intensidade Háptica Tátil Configurável:** escolha a intensidade da vibração do celular (Forte, Média ou Desativada) ao alternar séries, tocar em botões e concluir exercícios.
 
 ### 🏋️‍♂️ Biblioteca e Execução do Treino
@@ -286,7 +288,7 @@ lib/
 ### 📊 Algoritmos e Biomecânica Computacional
 
 - **Estimativa de Força Máxima (1RM):** Fórmulas combinadas de **Epley** $\text{1RM} = w \cdot (1 + \frac{r}{30})$ e **Brzycki** $\text{1RM} = w \cdot \frac{36}{37 - r}$ para suavização de dispersão estatística em repetições entre 1 e 12.
-- **Proporção Isquiotibiais vs Quadríceps (Razão I:Q):** Avaliação biomecânica do torque flexor/extensor com limiar ótimo de segurança articular $\ge 0.60$ para prevenção de lesões de ligamento cruzado anterior (LCA).
+- **Equilíbrio Muscular Posterior vs Quadríceps:** Avaliação biomecânica da proporção funcional flexor/extensor para distribuição equilibrada de cargas articulares e harmonia no desenvolvimento de pernas.
 - **Taxa Metabólica Basal (TMB):** Equação **Mifflin-St Jeor** ponderada por sexo, peso, altura e idade, multiplicada por fatores de atividade física validados pela literatura de fisiologia do esporte.
 
 ## 🛡️ Segurança, Privacidade e Seus Dados
@@ -311,6 +313,7 @@ A distribuição gratuita da versão iOS e a compatibilidade multiplataforma com
 ## 👤 Criador, Autoria e Licença
 
 - **Criador e Desenvolvedor:** **Luan Thierry** ([@LuanThierry](https://github.com/LuanThierry))
+- **E-mail de Contato & Suporte Oficial:** [luanthierry.suporte@gmail.com](mailto:luanthierry.suporte@gmail.com)
 - **Como Apoiar:** Se o aplicativo ajuda nos seus treinos e rotina diária, considere apoiar voluntariamente o projeto pelo [**LivePix (`livepix.gg/luanthierry`)**](https://livepix.gg/luanthierry) ou deixando uma **Estrela (⭐)** aqui no GitHub!
 
 O código-fonte está licenciado sob a licença [MIT](LICENSE). Consulte [`docs/LICENCA_E_DADOS.md`](docs/LICENCA_E_DADOS.md) para detalhes sobre dados locais, backups e chaves de compilação.

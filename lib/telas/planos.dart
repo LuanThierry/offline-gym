@@ -1288,16 +1288,14 @@ class _CartaoDoPlanoDoDia extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: hasRoutines
-                          ? (temaEscuro
-                              ? const Color(0xFF1C3325)
-                              : const Color(0xFFEAF8F0))
+                          ? colorScheme.primary.withValues(
+                              alpha: temaEscuro ? 0.14 : 0.08,
+                            )
                           : colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: hasRoutines
-                            ? (temaEscuro
-                                ? const Color(0xFF285B40)
-                                : const Color(0xFFBDE8CD))
+                            ? colorScheme.primary.withValues(alpha: 0.45)
                             : colorScheme.outlineVariant,
                       ),
                     ),
@@ -1306,11 +1304,7 @@ class _CartaoDoPlanoDoDia extends StatelessWidget {
                           ? '${rotinas.length} ${rotinas.length == 1 ? 'treino' : 'treinos'}'
                           : 'Dia de descanso 🧘',
                       style: TextStyle(
-                        color: hasRoutines
-                            ? (temaEscuro
-                                ? const Color(0xFF8BE0A6)
-                                : const Color(0xFF238754))
-                            : colorScheme.primary,
+                        color: colorScheme.primary,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),

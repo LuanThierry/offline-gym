@@ -229,7 +229,9 @@ class _EstadoDaTelaDeHistorico extends State<TelaDeHistorico> {
                 ),
               ),
               const SizedBox(height: 10),
-              _CartaoVolumeSemanalPorMusculo(provedor: provedor),
+              RepaintBoundary(
+                child: _CartaoVolumeSemanalPorMusculo(provedor: provedor),
+              ),
               const SizedBox(height: 10),
               if (!hasPlannedExercises || !hasCompletedWorkouts) ...<Widget>[
                 Container(
@@ -290,17 +292,19 @@ class _EstadoDaTelaDeHistorico extends State<TelaDeHistorico> {
               ],
               Material(
                 color: hasTrainingSelected
-                    ? (temaEscuro
-                        ? const Color(0xFF183629)
-                        : const Color(0xFFEAF8F0))
+                    ? Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: temaEscuro ? 0.14 : 0.08)
                     : Theme.of(context).colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                   side: BorderSide(
                     color: hasTrainingSelected
-                        ? (temaEscuro
-                            ? const Color(0xFF285B40)
-                            : const Color(0xFFBDE8CD))
+                        ? Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.45)
                         : Theme.of(context).colorScheme.outlineVariant,
                   ),
                 ),
@@ -318,11 +322,7 @@ class _EstadoDaTelaDeHistorico extends State<TelaDeHistorico> {
                           hasTrainingSelected
                               ? Icons.check_circle
                               : Icons.event_available,
-                          color: hasTrainingSelected
-                              ? (temaEscuro
-                                  ? const Color(0xFF6FD39A)
-                                  : const Color(0xFF238754))
-                              : Theme.of(context).colorScheme.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -1544,7 +1544,7 @@ class _DiaDoCalendarioHistorico extends StatelessWidget {
                 width: 4,
                 height: 4,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF2ECC71),
+                  color: Color(0xFF00E676),
                   shape: BoxShape.circle,
                 ),
               )
@@ -1643,7 +1643,7 @@ class _EstadoDaTelaDeCalendarioDoHistorico
                 leading: Icon(
                   Icons.circle,
                   size: 12,
-                  color: Color(0xFF2ECC71),
+                  color: Color(0xFF00E676),
                 ),
                 title: Text('Dia com treino concluído'),
                 subtitle: Text(
@@ -2301,10 +2301,40 @@ class _CartaoHeatmapConsistencia extends StatelessWidget {
   }
 }
 
-class _CartaoVolumeSemanalPorMusculo extends StatelessWidget {
+class _CartaoVolumeSemanalPorMusculo extends StatefulWidget {
   const _CartaoVolumeSemanalPorMusculo({required this.provedor});
 
   final ProvedorDeTreino provedor;
+
+  @override
+  State<_CartaoVolumeSemanalPorMusculo> createState() =>
+      _CartaoVolumeSemanalPorMusculoState();
+}
+
+class _CartaoVolumeSemanalPorMusculoState
+    extends State<_CartaoVolumeSemanalPorMusculo> {
+  Future<DiagnosticoDoCoach>? _futureDiagnostico;
+  DiagnosticoDoCoach? _ultimoDiagnostico;
+
+  @override
+  void initState() {
+    super.initState();
+    _atualizarFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartaoVolumeSemanalPorMusculo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.provedor != oldWidget.provedor ||
+        widget.provedor.historico.length !=
+            oldWidget.provedor.historico.length) {
+      _atualizarFuture();
+    }
+  }
+
+  void _atualizarFuture() {
+    _futureDiagnostico = widget.provedor.obterDiagnosticoDoCoach();
+  }
 
   void _confirmarEAplicarDeload(
       BuildContext context, ProvedorDeTreino provedor) {
@@ -2360,29 +2390,34 @@ class _CartaoVolumeSemanalPorMusculo extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return FutureBuilder<List<MarcoDeVolumeMuscular>>(
-      future: provedor.obterVolumeSemanalPorMusculo(),
+    return FutureBuilder<DiagnosticoDoCoach>(
+      future: _futureDiagnostico,
       builder: (context, snapshot) {
-        final marcos = snapshot.data ?? const <MarcoDeVolumeMuscular>[];
+        if (snapshot.hasData) {
+          _ultimoDiagnostico = snapshot.data;
+        }
+        final diagnostico = snapshot.data ?? _ultimoDiagnostico;
+        final marcos = diagnostico?.volumeSemanal ?? const <MarcoDeVolumeMuscular>[];
         final totalSeriesSemana = marcos.fold<int>(
           0,
           (acc, m) => acc + m.seriesCompletadas,
         );
 
-        final diagnostico = CoachCientificoOffline.analisarTreinamento(
-          perfil: provedor.perfil,
-          volumeSemanal: marcos,
-          historico: provedor.historico,
-          diasOfensiva: provedor.ofensivaAtual,
-          pesoAtualKg: provedor.pesoCorporalAtualKg,
-        );
+        if (diagnostico == null) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             CardCoachFisiologico(
               diagnostico: diagnostico,
-              aoTocarDeload: () => _confirmarEAplicarDeload(context, provedor),
+              aoTocarDeload: () => _confirmarEAplicarDeload(context, widget.provedor),
             ),
             const SizedBox(height: 12),
             RadarSimetriaMuscular(

@@ -382,18 +382,18 @@ class PaletaCoresHabito {
   const PaletaCoresHabito._();
 
   static const List<Color> cores = <Color>[
-    Color(0xFF6C5CE7), // Roxo Primário
-    Color(0xFF7C4DFF), // Violeta
-    Color(0xFF3F51B5), // Índigo
-    Color(0xFF00BFA5), // Turquesa
-    Color(0xFF00C853), // Verde Esmeralda
-    Color(0xFFFFB300), // Âmbar Dourado
-    Color(0xFFFF6D00), // Laranja Intenso
-    Color(0xFFFF1744), // Carmim / Vermelho
-    Color(0xFF00B0FF), // Azul Claro
-    Color(0xFFE91E63), // Rosa Choque
-    Color(0xFF795548), // Marrom
-    Color(0xFF607D8B), // Ardósia
+    Color(0xFF7C4DFF), // Cyber Violet Neon
+    Color(0xFF00E676), // Volt Green Neon
+    Color(0xFFFF1744), // Crimson Fire Neon
+    Color(0xFFFFB300), // Electric Amber Neon
+    Color(0xFF00E5FF), // Cyber Neon Ciano
+    Color(0xFFFF6D00), // Laranja Hipertrófico Neon
+    Color(0xFFFF007F), // Synthwave Magenta
+    Color(0xFF00BFA5), // Aqua Neon
+    Color(0xFFCCFF00), // Acid Volt Neon
+    Color(0xFF2979FF), // Azul Elétrico
+    Color(0xFF6C5CE7), // Roxo Original
+    Color(0xFF546E7A), // Obsidiana / Titânio
   ];
 
   static const List<String> categoriasPadrao = <String>[
